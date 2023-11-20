@@ -168,7 +168,7 @@ func (u *UserHandler) SignUp(context *gin.Context) {
 	})
 	switch {
 	case err == nil:
-		context.String(http.StatusOK, "hello 你在注册%v", isMail)
+		context.String(http.StatusOK, "注册成功")
 	case errors.Is(err, service.ErrDuplicateEmail):
 		context.String(http.StatusOK, "邮箱冲突，请换一个")
 	default:

@@ -3,7 +3,8 @@ module github.com/daidai53/webook
 go 1.21
 
 require (
-	github.com/daidai53/localcache v0.5.0
+	github.com/DATA-DOG/go-sqlmock v1.5.0
+	github.com/daidai53/localcache v0.6.0
 	github.com/dlclark/regexp2 v1.10.0
 	github.com/ecodeclub/ekit v0.0.8
 	github.com/gin-contrib/cors v1.4.0
@@ -16,6 +17,7 @@ require (
 	github.com/stretchr/testify v1.8.3
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.781
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms v1.0.781
+	go.uber.org/mock v0.3.0
 	golang.org/x/crypto v0.9.0
 	gorm.io/driver/mysql v1.5.1
 	gorm.io/gorm v1.25.4

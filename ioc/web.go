@@ -4,6 +4,7 @@ package ioc
 import (
 	"github.com/daidai53/webook/internal/web"
 	"github.com/daidai53/webook/internal/web/middlewares/login"
+	"github.com/daidai53/webook/pkg/limiter"
 	"github.com/daidai53/webook/pkg/middleware/ratelimit"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -35,7 +36,8 @@ func InitGinMiddlewares(redisClient goredis.Cmdable) []gin.HandlerFunc {
 			MaxAge: 12 * time.Hour,
 		}),
 		(&login.MiddlewareJWTBuilder{}).CheckLogin(),
-		ratelimit.NewRedisSliceWindowLimiter(redisClient, 30*time.Second, 1000).BuildLua(),
+		ratelimit.NewRedisSliceWindowLimiter("ip-limiter", limiter.NewRedisSlidingWindowLimiter(redisClient,
+			time.Second, 1000)).BuildLua(),
 	}
 }
 

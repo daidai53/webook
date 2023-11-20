@@ -7,7 +7,6 @@ import (
 	"github.com/daidai53/webook/internal/domain"
 	"github.com/daidai53/webook/internal/repository/cache"
 	"github.com/daidai53/webook/internal/repository/dao"
-	"github.com/gin-gonic/gin"
 	"log"
 )
 
@@ -19,7 +18,7 @@ var (
 type UserRepository interface {
 	Create(ctx context.Context, user domain.User) error
 	FindByEmail(ctx context.Context, email string) (domain.User, error)
-	FindById(ctx *gin.Context, id int64) (domain.User, error)
+	FindById(ctx context.Context, id int64) (domain.User, error)
 	FindByPhone(c context.Context, phone string) (domain.User, error)
 	Update(ctx context.Context, idInt64 int64, user domain.User) error
 }
@@ -48,7 +47,7 @@ func (u *CachedUserRepository) FindByEmail(ctx context.Context, email string) (d
 	return u.toDomainUser(usr), nil
 }
 
-func (u *CachedUserRepository) FindById(ctx *gin.Context, id int64) (domain.User, error) {
+func (u *CachedUserRepository) FindById(ctx context.Context, id int64) (domain.User, error) {
 	cu, err := u.cache.Get(ctx, id)
 	if err == nil {
 		return cu, nil

@@ -2,6 +2,7 @@
 package ratelimit
 
 import (
+	"github.com/daidai53/webook/pkg/limiter"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"testing"
@@ -17,9 +18,10 @@ func initRedis() redis.Cmdable {
 }
 
 func Test_RedisSlideWindowLimiter(t *testing.T) {
-	limiterMiddleWare := NewRedisSliceWindowLimiter(initRedis(), 30*time.Second, 10)
+	limiterMiddleWare := NewRedisSliceWindowLimiter("ip-limiter",
+		limiter.NewRedisSlidingWindowLimiter(initRedis(), time.Second, 1000))
 	engine := gin.Default()
-	engine.GET("/limit", limiterMiddleWare.Build())
+	engine.GET("/limit", limiterMiddleWare.BuildLua())
 	err := engine.Run()
 	if err != nil {
 		return

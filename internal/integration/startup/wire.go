@@ -1,7 +1,7 @@
 // Copyright@daidai53 2023
 //go:build wireinject
 
-package main
+package startup
 
 import (
 	"github.com/daidai53/webook/internal/repository"
@@ -18,7 +18,7 @@ func InitWebServer() *gin.Engine {
 	wire.Build(
 		// 第三方依赖
 		ioc.InitDB,
-		ioc.InitRedisClient,
+		InitRedis,
 		dao.NewUserDAO,
 		//ioc.NewLocalCacheDefault,
 
