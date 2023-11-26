@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"github.com/daidai53/webook/internal/domain"
 	"github.com/daidai53/webook/internal/service"
+	ijwt "github.com/daidai53/webook/internal/web/jwt"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
-	"time"
 )
 
 const (
@@ -23,6 +23,7 @@ const (
 )
 
 type UserHandler struct {
+	ijwt.Handler
 	emailRegExp    *regexp.Regexp
 	passwordRegExp *regexp.Regexp
 	birthdayRegExp *regexp.Regexp
@@ -30,13 +31,14 @@ type UserHandler struct {
 	codeSvc        service.CodeService
 }
 
-func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
+func NewUserHandler(svc service.UserService, codeSvc service.CodeService, hdl ijwt.Handler) *UserHandler {
 	return &UserHandler{
 		emailRegExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordRegExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
 		birthdayRegExp: regexp.MustCompile(birthdayRegexPattern, regexp.None),
 		svc:            svc,
 		codeSvc:        codeSvc,
+		Handler:        hdl,
 	}
 }
 
@@ -46,6 +48,8 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug.POST("/login", u.LoginJWT)
 	ug.POST("/edit", u.Edit)
 	ug.GET("/profile", u.Profile)
+	ug.GET("/refresh_token", u.RefreshToken)
+	ug.POST("/logout", u.LogOut)
 
 	//手机验证码登录相关功能
 	ug.POST("/login_sms/code/send", u.SendSMSLoginCode)
@@ -118,7 +122,13 @@ func (u *UserHandler) LoginSMS(context *gin.Context) {
 		})
 		return
 	}
-	u.setJWT(context, user.Id)
+	err = u.SetLoginToken(context, user.Id)
+	if err != nil {
+		context.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "系统错误",
+		})
+	}
 	context.JSON(http.StatusOK, Result{
 		Msg: "登录成功",
 	})
@@ -222,7 +232,13 @@ func (u *UserHandler) LoginJWT(context *gin.Context) {
 	usr, err := u.svc.Login(context, req.Email, req.Password)
 	switch {
 	case err == nil:
-		u.setJWT(context, usr.Id)
+		err = u.SetLoginToken(context, usr.Id)
+		if err != nil {
+			context.JSON(http.StatusOK, Result{
+				Code: 4,
+				Msg:  "系统错误",
+			})
+		}
 		context.String(http.StatusOK, "登录成功")
 	case errors.Is(err, service.ErrInvalidUserOrPassword):
 		context.String(http.StatusOK, "用户名或者密码不对")
@@ -230,23 +246,6 @@ func (u *UserHandler) LoginJWT(context *gin.Context) {
 		context.String(http.StatusOK, "系统错误")
 	}
 
-}
-
-func (u *UserHandler) setJWT(context *gin.Context, uid int64) {
-	uc := UserClaim{
-		Uid:       uid,
-		UserAgent: context.GetHeader("User-Agent"),
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
-	tokenStr, err := token.SignedString(JWTKey)
-	if err != nil {
-		context.String(http.StatusOK, "系统错误")
-		return
-	}
-	context.Header("x-jwt-token", tokenStr)
 }
 
 func (u *UserHandler) Edit(context *gin.Context) {
@@ -330,10 +329,45 @@ func (u *UserHandler) Profile(context *gin.Context) {
 	}
 }
 
-type UserClaim struct {
-	jwt.RegisteredClaims
-	Uid       int64
-	UserAgent string
+func (u *UserHandler) RefreshToken(context *gin.Context) {
+	// 约定，前端在authorization里带上了refresh token
+	tokenStr := u.ExtractToken(context)
+	var rc ijwt.RefreshClaims
+	token, err := jwt.ParseWithClaims(tokenStr, &rc, func(token *jwt.Token) (interface{}, error) {
+		return ijwt.RCJWTKey, nil
+	})
+	if err != nil {
+		context.AbortWithStatus(http.StatusUnauthorized)
+	}
+	if token == nil || !token.Valid {
+		context.AbortWithStatus(http.StatusUnauthorized)
+	}
+
+	err = u.CheckSession(context, fmt.Sprintf("users:ssid:%s", rc.Ssid))
+	if err != nil {
+		context.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	err = u.SetJWTToken(context, rc.Uid, rc.Ssid)
+	if err != nil {
+		context.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	context.JSON(http.StatusOK, Result{
+		Msg: "OK",
+	})
 }
 
-var JWTKey = []byte("fjquxoimjdoiwqjoifjnoi")
+func (u *UserHandler) LogOut(context *gin.Context) {
+	err := u.ClearToken(context)
+	if err != nil {
+		context.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+	}
+	context.JSON(http.StatusOK, Result{
+		Msg: "退出登录成功",
+	})
+}

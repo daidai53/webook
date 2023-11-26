@@ -9,6 +9,7 @@ import (
 	"github.com/daidai53/webook/internal/repository/dao"
 	"github.com/daidai53/webook/internal/service"
 	"github.com/daidai53/webook/internal/web"
+	ijwt "github.com/daidai53/webook/internal/web/jwt"
 	"github.com/daidai53/webook/ioc"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
@@ -33,12 +34,14 @@ func InitWebServer() *gin.Engine {
 
 		// service部分
 		ioc.InitSmsService,
+		ioc.InitWechatService,
 		service.NewUserService,
 		service.NewCodeService,
 
 		// handler部分
 		web.NewUserHandler,
-
+		web.NewOAuth2WechatHandler,
+		ijwt.NewRedisJWTHandler,
 		ioc.InitWebServer,
 		ioc.InitGinMiddlewares,
 	)

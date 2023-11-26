@@ -21,6 +21,7 @@ type UserDAO interface {
 	FindById(ctx context.Context, id int64) (User, error)
 	Update(ctx context.Context, idInt64 int64, user User) error
 	FindByPhone(ctx context.Context, phone string) (User, error)
+	FindByWeChat(ctx context.Context, openId string) (User, error)
 }
 
 type GormUserDAO struct {
@@ -43,8 +44,14 @@ type User struct {
 
 	Nickname string
 	Phone    sql.NullString `gorm:"unique"`
-	Birthday string
-	AboutMe  string
+
+	// 如果查询要求同时使用openid和unionid，就要创建联合唯一索引
+	// 如果查询只用openid，那么就在openid上创建唯一索引，或者<openid，unionid>联合索引
+	// 如果查询只用unionid，那么就在unionid上创建唯一索引，或者<unionid,openid>联合索引
+	WechatOpenId  sql.NullString `gorm:"unique"`
+	WechatUnionId sql.NullString
+	Birthday      string
+	AboutMe       string
 }
 
 func (dao *GormUserDAO) Insert(ctx context.Context, u User) error {
@@ -83,5 +90,11 @@ func (dao *GormUserDAO) Update(ctx context.Context, idInt64 int64, user User) er
 func (dao *GormUserDAO) FindByPhone(ctx context.Context, phone string) (User, error) {
 	var u User
 	err := dao.db.WithContext(ctx).Where("phone=?", phone).First(&u).Error
+	return u, err
+}
+
+func (dao *GormUserDAO) FindByWeChat(ctx context.Context, openId string) (User, error) {
+	var u User
+	err := dao.db.WithContext(ctx).Where("wechat_open_id=?", openId).First(&u).Error
 	return u, err
 }

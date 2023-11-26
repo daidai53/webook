@@ -10,4 +10,6 @@ type User struct {
 	Birthday string
 	AboutMe  string
 	Phone    string
+
+	WeChatInfo WeChatInfo
 }

@@ -3,6 +3,7 @@ package ioc
 
 import (
 	"github.com/daidai53/webook/internal/web"
+	ijwt "github.com/daidai53/webook/internal/web/jwt"
 	"github.com/daidai53/webook/internal/web/middlewares/login"
 	"github.com/daidai53/webook/pkg/limiter"
 	"github.com/daidai53/webook/pkg/middleware/ratelimit"
@@ -12,14 +13,15 @@ import (
 	"time"
 )
 
-func InitWebServer(mdlw []gin.HandlerFunc, handlers *web.UserHandler) *gin.Engine {
+func InitWebServer(mdlw []gin.HandlerFunc, handlers *web.UserHandler, wechatHdl *web.OAuth2WechatHandler) *gin.Engine {
 	server := gin.Default()
 	server.Use(mdlw...)
 	handlers.RegisterRoutes(server)
+	wechatHdl.ResiterRoutes(server)
 	return server
 }
 
-func InitGinMiddlewares(redisClient goredis.Cmdable) []gin.HandlerFunc {
+func InitGinMiddlewares(redisClient goredis.Cmdable, hdl ijwt.Handler) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		cors.New(cors.Config{
 			AllowCredentials: true,
@@ -29,13 +31,14 @@ func InitGinMiddlewares(redisClient goredis.Cmdable) []gin.HandlerFunc {
 			},
 			ExposeHeaders: []string{
 				"x-jwt-token",
+				"x-refresh-token",
 			},
 			AllowOriginFunc: func(origin string) bool {
 				return true
 			},
 			MaxAge: 12 * time.Hour,
 		}),
-		(&login.MiddlewareJWTBuilder{}).CheckLogin(),
+		login.NewMiddlewareJWTBuilder(hdl).CheckLogin(),
 		ratelimit.NewRedisSliceWindowLimiter("ip-limiter", limiter.NewRedisSlidingWindowLimiter(redisClient,
 			time.Second, 1000)).BuildLua(),
 	}

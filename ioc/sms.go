@@ -5,10 +5,12 @@ import (
 	"github.com/daidai53/webook/internal/service/sms"
 	"github.com/daidai53/webook/internal/service/sms/localsms"
 	"github.com/daidai53/webook/internal/service/sms/tencent"
+	"github.com/daidai53/webook/pkg/limiter"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
 	tsms "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms/v20210111"
 	"os"
+	"time"
 )
 
 func InitSmsService() sms.Service {
@@ -30,5 +32,6 @@ func initTencentSmsService() sms.Service {
 		return nil
 	}
 
-	return tencent.NewService(c, "1400864331", "妙影科技")
+	return tencent.NewService(c, "1400864331", "妙影科技",
+		limiter.NewRedisSlidingWindowLimiter(nil, time.Second, 100))
 }

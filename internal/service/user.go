@@ -23,6 +23,7 @@ type UserService interface {
 	Profile(c *gin.Context, userId int64) error
 	Edit(c *gin.Context, idInt64 int64, nickname, birthday, aboutMe string) error
 	FindOrCreate(c *gin.Context, phone string) (domain.User, error)
+	FindOrCreateByWeChat(c context.Context, info domain.WeChatInfo) (domain.User, error)
 }
 
 type userService struct {
@@ -95,6 +96,25 @@ func (u *userService) FindOrCreate(c *gin.Context, phone string) (domain.User, e
 	// 这里有坑：主从延迟，可能会从从库查询
 	// 理论上应该强制走主库查询
 	return u.repo.FindByPhone(c, phone)
+}
+
+func (u *userService) FindOrCreateByWeChat(c context.Context, wechatInfo domain.WeChatInfo) (domain.User, error) {
+	usr, err := u.repo.FindByWeChat(c, wechatInfo.OpenId)
+	if !errors.Is(err, repository.ErrUserNotFound) {
+		return usr, err
+	}
+	err = u.repo.Create(c, domain.User{
+		WeChatInfo: wechatInfo,
+	})
+	// 有两种可能
+	// err恰好是唯一索引冲突，或者是系统错误
+	if err != nil && !errors.Is(err, repository.ErrDuplicateUser) {
+		return domain.User{}, err
+	}
+	// err为nil或者重复，代表用户存在
+	// 这里有坑：主从延迟，可能会从从库查询
+	// 理论上应该强制走主库查询
+	return u.repo.FindByWeChat(c, wechatInfo.OpenId)
 }
 
 func toJson(usr domain.User) gin.H {
