@@ -1,0 +1,4 @@
+test:
+  key: value1
+redis:
+  Addr: "localhost:6379"

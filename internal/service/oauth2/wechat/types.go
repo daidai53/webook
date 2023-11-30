@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/daidai53/webook/internal/domain"
+	"github.com/daidai53/webook/pkg/logger"
 	"net/http"
 	"net/url"
 )
@@ -21,13 +22,15 @@ type service struct {
 	appID     string
 	appSecret string
 	client    *http.Client
+	l         logger.LoggerV1
 }
 
-func NewService(appId string, secret string) Service {
+func NewService(appId string, secret string, l logger.LoggerV1) Service {
 	return &service{
 		appID:     appId,
 		appSecret: secret,
 		client:    http.DefaultClient,
+		l:         l,
 	}
 }
 

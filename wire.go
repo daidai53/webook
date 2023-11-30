@@ -20,6 +20,7 @@ func InitWebServer() *gin.Engine {
 		// 第三方依赖
 		ioc.InitDB,
 		ioc.InitRedisClient,
+		ioc.InitLogger,
 		dao.NewUserDAO,
 		//ioc.NewLocalCacheDefault,
 

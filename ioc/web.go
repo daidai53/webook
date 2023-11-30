@@ -2,10 +2,13 @@
 package ioc
 
 import (
+	"context"
 	"github.com/daidai53/webook/internal/web"
 	ijwt "github.com/daidai53/webook/internal/web/jwt"
+	middleware "github.com/daidai53/webook/internal/web/middlewares"
 	"github.com/daidai53/webook/internal/web/middlewares/login"
 	"github.com/daidai53/webook/pkg/limiter"
+	"github.com/daidai53/webook/pkg/logger"
 	"github.com/daidai53/webook/pkg/middleware/ratelimit"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -21,7 +24,7 @@ func InitWebServer(mdlw []gin.HandlerFunc, handlers *web.UserHandler, wechatHdl 
 	return server
 }
 
-func InitGinMiddlewares(redisClient goredis.Cmdable, hdl ijwt.Handler) []gin.HandlerFunc {
+func InitGinMiddlewares(redisClient goredis.Cmdable, hdl ijwt.Handler, l logger.LoggerV1) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		cors.New(cors.Config{
 			AllowCredentials: true,
@@ -38,6 +41,9 @@ func InitGinMiddlewares(redisClient goredis.Cmdable, hdl ijwt.Handler) []gin.Han
 			},
 			MaxAge: 12 * time.Hour,
 		}),
+		middleware.NewLogMiddlewareBuilder(func(ctx context.Context, al middleware.AccessLog) {
+			l.Debug("", logger.Field{Key: "req", Val: al})
+		}).AllowReqBody().AllowRespBody().Build(),
 		login.NewMiddlewareJWTBuilder(hdl).CheckLogin(),
 		ratelimit.NewRedisSliceWindowLimiter("ip-limiter", limiter.NewRedisSlidingWindowLimiter(redisClient,
 			time.Second, 1000)).BuildLua(),

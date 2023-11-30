@@ -7,6 +7,7 @@ import (
 	"github.com/daidai53/webook/internal/domain"
 	"github.com/daidai53/webook/internal/repository"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
 )
@@ -103,6 +104,9 @@ func (u *userService) FindOrCreateByWeChat(c context.Context, wechatInfo domain.
 	if !errors.Is(err, repository.ErrUserNotFound) {
 		return usr, err
 	}
+	// 这边意味着是一个新用户
+	// json格式的wechatInfo
+	zap.L().Info("新用户", zap.Any("unionid", wechatInfo))
 	err = u.repo.Create(c, domain.User{
 		WeChatInfo: wechatInfo,
 	})
