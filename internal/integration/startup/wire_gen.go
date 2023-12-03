@@ -12,6 +12,7 @@ import (
 	"github.com/daidai53/webook/internal/repository/dao"
 	"github.com/daidai53/webook/internal/service"
 	"github.com/daidai53/webook/internal/web"
+	"github.com/daidai53/webook/internal/web/jwt"
 	"github.com/daidai53/webook/ioc"
 	"github.com/gin-gonic/gin"
 )
@@ -19,9 +20,11 @@ import (
 // Injectors from wire.go:
 
 func InitWebServer() *gin.Engine {
-	cmdable := ioc.InitRedisClient()
-	v := ioc.InitGinMiddlewares(cmdable)
-	db := ioc.InitDB()
+	cmdable := InitRedis()
+	handler := jwt.NewRedisJWTHandler(cmdable)
+	loggerV1 := ioc.InitLogger()
+	v := ioc.InitGinMiddlewares(cmdable, handler, loggerV1)
+	db := ioc.InitDB(loggerV1)
 	userDAO := dao.NewUserDAO(db)
 	userCache := cache.NewUserCache(cmdable)
 	userRepository := repository.NewCachedUserRepository(userDAO, userCache)
@@ -30,7 +33,9 @@ func InitWebServer() *gin.Engine {
 	codeRepository := repository.NewCachedCodeRepository(codeCache)
 	smsService := ioc.InitSmsService()
 	codeService := service.NewCodeService(codeRepository, smsService)
-	userHandler := web.NewUserHandler(userService, codeService)
-	engine := ioc.InitWebServer(v, userHandler)
+	userHandler := web.NewUserHandler(userService, codeService, handler)
+	wechatService := ioc.InitWechatService(loggerV1)
+	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService, handler)
+	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler)
 	return engine
 }

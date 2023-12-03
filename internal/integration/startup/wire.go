@@ -9,6 +9,7 @@ import (
 	"github.com/daidai53/webook/internal/repository/dao"
 	"github.com/daidai53/webook/internal/service"
 	"github.com/daidai53/webook/internal/web"
+	ijwt "github.com/daidai53/webook/internal/web/jwt"
 	"github.com/daidai53/webook/ioc"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
@@ -20,6 +21,9 @@ func InitWebServer() *gin.Engine {
 		ioc.InitDB,
 		InitRedis,
 		dao.NewUserDAO,
+		ioc.InitLogger,
+		ijwt.NewRedisJWTHandler,
+		ioc.InitWechatService,
 		//ioc.NewLocalCacheDefault,
 
 		// cache部分
@@ -38,6 +42,7 @@ func InitWebServer() *gin.Engine {
 
 		// handler部分
 		web.NewUserHandler,
+		web.NewOAuth2WechatHandler,
 
 		ioc.InitWebServer,
 		ioc.InitGinMiddlewares,

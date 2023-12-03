@@ -185,7 +185,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 
 			// 利用mock来构造UserHandler
 			userSvc, codeSvc := tc.mock(ctrl)
-			hdl := NewUserHandler(userSvc, codeSvc)
+			hdl := NewUserHandler(userSvc, codeSvc, nil)
 
 			// 准备服务器和路由
 			server := gin.Default()
