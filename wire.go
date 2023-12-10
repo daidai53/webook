@@ -22,6 +22,7 @@ func InitWebServer() *gin.Engine {
 		ioc.InitRedisClient,
 		ioc.InitLogger,
 		dao.NewUserDAO,
+		dao.NewArticleGormDAO,
 		//ioc.NewLocalCacheDefault,
 
 		// cache部分
@@ -32,16 +33,19 @@ func InitWebServer() *gin.Engine {
 		// repository部分
 		repository.NewCachedCodeRepository,
 		repository.NewCachedUserRepository,
+		repository.NewCachedArticleRepository,
 
 		// service部分
 		ioc.InitSmsService,
 		ioc.InitWechatService,
 		service.NewUserService,
 		service.NewCodeService,
+		service.NewArticleService,
 
 		// handler部分
 		web.NewUserHandler,
 		web.NewOAuth2WechatHandler,
+		web.NewArticleHandler,
 		ijwt.NewRedisJWTHandler,
 		ioc.InitWebServer,
 		ioc.InitGinMiddlewares,

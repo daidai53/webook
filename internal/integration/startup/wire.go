@@ -15,13 +15,21 @@ import (
 	"github.com/google/wire"
 )
 
+var thirdPartySet = wire.NewSet(
+	InitDB,
+	InitRedis,
+	ioc.InitLogger,
+)
+
 func InitWebServer() *gin.Engine {
 	wire.Build(
 		// 第三方依赖
-		ioc.InitDB,
+		InitDB,
 		InitRedis,
-		dao.NewUserDAO,
 		ioc.InitLogger,
+
+		dao.NewUserDAO,
+		dao.NewArticleGormDAO,
 		ijwt.NewRedisJWTHandler,
 		ioc.InitWechatService,
 		//ioc.NewLocalCacheDefault,
@@ -34,18 +42,32 @@ func InitWebServer() *gin.Engine {
 		// repository部分
 		repository.NewCachedCodeRepository,
 		repository.NewCachedUserRepository,
+		repository.NewCachedArticleRepository,
 
 		// service部分
 		ioc.InitSmsService,
 		service.NewUserService,
 		service.NewCodeService,
+		service.NewArticleService,
 
 		// handler部分
 		web.NewUserHandler,
 		web.NewOAuth2WechatHandler,
+		web.NewArticleHandler,
 
 		ioc.InitWebServer,
 		ioc.InitGinMiddlewares,
 	)
 	return gin.Default()
+}
+
+func InitArticleHandler() *web.ArticleHandler {
+	wire.Build(
+		thirdPartySet,
+		dao.NewArticleGormDAO,
+		repository.NewCachedArticleRepository,
+		service.NewArticleService,
+		web.NewArticleHandler,
+	)
+	return &web.ArticleHandler{}
 }

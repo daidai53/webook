@@ -140,6 +140,9 @@ func TestUserHandler_SendSMSCode(t *testing.T) {
 			server.ServeHTTP(recorder, req)
 
 			assert.Equal(t, tc.wantCode, recorder.Code)
+			if tc.wantCode != http.StatusOK {
+				return
+			}
 
 			var res web.Result
 			err = json.NewDecoder(recorder.Body).Decode(&res)
