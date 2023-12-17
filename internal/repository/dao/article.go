@@ -13,6 +13,7 @@ type ArticleDAO interface {
 	Insert(ctx context.Context, art Article) (int64, error)
 	UpdateById(ctx context.Context, art Article) error
 	Sync(ctx context.Context, art Article) (int64, error)
+	SyncStatus(ctx context.Context, uid int64, id int64, status uint8) error
 }
 
 type ArticleGormDAO struct {
@@ -23,6 +24,35 @@ func NewArticleGormDAO(db *gorm.DB) ArticleDAO {
 	return &ArticleGormDAO{
 		db: db,
 	}
+}
+
+func (a *ArticleGormDAO) SyncStatus(ctx context.Context, uid int64, id int64, status uint8) error {
+	tx := a.db.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+	defer tx.Rollback()
+
+	now := time.Now().UnixMilli()
+	res := tx.Model(&Article{}).Where("id = ? and author_id = ?", uid, id).Updates(map[string]interface{}{
+		"utime":  now,
+		"status": status,
+	})
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected != 1 {
+		return errors.New("更新失败，ID不对或作者不对")
+	}
+	res = tx.Model(&PublishedArticle{}).Where("id = ?", uid).Updates(map[string]interface{}{
+		"utime":  now,
+		"status": status,
+	})
+	if res.Error != nil {
+		return res.Error
+	}
+	tx.Commit()
+	return nil
 }
 
 func (a *ArticleGormDAO) Sync(ctx context.Context, art Article) (int64, error) {
@@ -54,6 +84,7 @@ func (a *ArticleGormDAO) Sync(ctx context.Context, art Article) (int64, error) {
 			"title":   pubArt.Title,
 			"content": pubArt.Content,
 			"utime":   now,
+			"status":  pubArt.Status,
 		}),
 	}).Create(&pubArt).Error
 	if err != nil {
@@ -76,6 +107,7 @@ func (a *ArticleGormDAO) UpdateById(ctx context.Context, art Article) error {
 	res := a.db.WithContext(ctx).Model(&art).Where("id = ? AND author_id=?", art.Id, art.AuthorId).Updates(map[string]any{
 		"title":   art.Title,
 		"content": art.Content,
+		"status":  art.Status,
 		"utime":   now,
 	})
 	if res.Error != nil {
@@ -88,14 +120,14 @@ func (a *ArticleGormDAO) UpdateById(ctx context.Context, art Article) error {
 }
 
 type Article struct {
-	Id      int64  `gorm:"primaryKey,autoIncrement"`
-	Title   string `gorm:"type=varchar(4096)"`
-	Content string `gorm:"type=BLOB"`
+	Id      int64  `gorm:"primaryKey,autoIncrement" bson:"id,omitempty"`
+	Title   string `gorm:"type=varchar(4096)" bson:"title,omitempty"`
+	Content string `gorm:"type=BLOB" bson:"content,omitempty"`
 	// 要根据创作者ID来查询
-	AuthorId int64 `gorm:"index"`
-	Ctime    int64
-	Utime    int64
-	Status   uint8
+	AuthorId int64 `gorm:"index" bson:"author_id,omitempty"`
+	Status   uint8 `bson:"status,omitempty"`
+	Ctime    int64 `bson:"ctime,omitempty"`
+	Utime    int64 `bson:"utime,omitempty"`
 }
 
 type PublishedArticle Article

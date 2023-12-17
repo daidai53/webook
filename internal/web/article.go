@@ -25,6 +25,7 @@ func (h *ArticleHandler) RegisterRoutes(server *gin.Engine) {
 	g := server.Group("/articles")
 	g.POST("/edit", h.Edit)
 	g.POST("/publish", h.Publish)
+	g.POST("/withdraw", h.Withdraw)
 }
 
 // Edit 接受 Article 输入，返回一个ID，文章的ID
@@ -86,5 +87,27 @@ func (h *ArticleHandler) Publish(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, Result{
 		Data: artId,
+	})
+}
+
+func (h *ArticleHandler) Withdraw(ctx *gin.Context) {
+	type Req struct {
+		Id int64
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	uid := ctx.MustGet("user-id").(int64)
+	err := h.svc.Withdraw(ctx, uid, req.Id)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		h.l.Error("撤回文章权限失败", logger.Error(err), logger.Int64("uid", uid), logger.Int64("aid", req.Id))
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Msg: "OK",
 	})
 }
