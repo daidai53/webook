@@ -56,7 +56,7 @@ func (a *ArticleS3DAO) SyncStatus(ctx context.Context, uid int64, id int64, stat
 	if status == uint8(domain.ArticleStatusPrivate) {
 		_, err = a.oss.DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
 			Bucket: ekit.ToPtr[string]("webook-1"),
-			Key:    ekit.ToPtr[string](strconv.FormatInt(art.Id, 10)),
+			Key:    ekit.ToPtr[string](strconv.FormatInt(id, 10)),
 		})
 
 	}
