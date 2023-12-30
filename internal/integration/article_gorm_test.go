@@ -31,7 +31,8 @@ func (a *ArticleHandlerSuite) TearDownTest() {
 
 func (a *ArticleHandlerSuite) SetupSuite() {
 	a.db = startup.InitDB()
-	hdl := startup.InitArticleHandler(dao.NewArticleGormDAO(a.db))
+	hdl := startup.InitArticleHandler(dao.NewArticleGormDAO(a.db), dao.NewGORMInteractiveDAO(a.db),
+		dao.NewUserDAO(a.db))
 	server := gin.Default()
 	server.Use(func(ctx *gin.Context) {
 		ctx.Set("user-id", int64(123))

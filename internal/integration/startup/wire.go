@@ -32,23 +32,28 @@ func InitWebServer() *gin.Engine {
 		dao.NewArticleGormDAO,
 		ijwt.NewRedisJWTHandler,
 		ioc.InitWechatService,
+		dao.NewGORMInteractiveDAO,
 		//ioc.NewLocalCacheDefault,
 
 		// cache部分
 		cache.NewRedisCodeCache,
 		//cache.NewLocalCodeCache,
+		cache.NewArticleRedisCache,
+		cache.NewInteractiveRedisCache,
 		cache.NewUserCache,
 
 		// repository部分
 		repository.NewCachedCodeRepository,
 		repository.NewCachedUserRepository,
 		repository.NewCachedArticleRepository,
+		repository.NewCachedInteractiveRepository,
 
 		// service部分
 		ioc.InitSmsService,
 		service.NewUserService,
 		service.NewCodeService,
 		service.NewArticleService,
+		service.NewInteractiveService,
 
 		// handler部分
 		web.NewUserHandler,
@@ -61,11 +66,17 @@ func InitWebServer() *gin.Engine {
 	return gin.Default()
 }
 
-func InitArticleHandler(dao dao.ArticleDAO) *web.ArticleHandler {
+func InitArticleHandler(artDao dao.ArticleDAO, interDao dao.InteractiveDAO, userDao dao.UserDAO) *web.ArticleHandler {
 	wire.Build(
 		thirdPartySet,
+		repository.NewCachedUserRepository,
 		repository.NewCachedArticleRepository,
+		repository.NewCachedInteractiveRepository,
 		service.NewArticleService,
+		service.NewInteractiveService,
+		cache.NewInteractiveRedisCache,
+		cache.NewArticleRedisCache,
+		cache.NewUserCache,
 		web.NewArticleHandler,
 	)
 	return &web.ArticleHandler{}

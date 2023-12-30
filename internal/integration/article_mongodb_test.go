@@ -44,7 +44,7 @@ func (a *ArticleMongoDBHandlerSuite) SetupSuite() {
 	a.liveCol = a.mdb.Collection("published_articles")
 	node, err := snowflake.NewNode(1)
 	assert.NoError(a.T(), err)
-	hdl := startup.InitArticleHandler(dao.NewMongoDBArticleDAO(a.mdb, node))
+	hdl := startup.InitArticleHandler(dao.NewMongoDBArticleDAO(a.mdb, node), nil, nil)
 	server := gin.Default()
 	server.Use(func(ctx *gin.Context) {
 		ctx.Set("user-id", int64(123))

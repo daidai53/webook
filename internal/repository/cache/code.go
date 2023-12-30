@@ -16,6 +16,7 @@ var luaSetCode string
 var luaVerifyCode string
 
 var ErrCodeSendTooMany = errors.New("发送太频繁")
+var ErrKeyNotFound = errors.New("没有记录")
 var ErrVerifySendTooMany = errors.New("验证太频繁")
 
 type CodeCache interface {

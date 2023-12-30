@@ -8,20 +8,23 @@ import (
 	"github.com/daidai53/webook/pkg/logger"
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/sync/errgroup"
 	"net/http"
 	"strconv"
 	"time"
 )
 
 type ArticleHandler struct {
-	svc service.ArticleService
-	l   logger.LoggerV1
+	svc      service.ArticleService
+	interSvc service.InteractiveService
+	l        logger.LoggerV1
 }
 
-func NewArticleHandler(l logger.LoggerV1, svc service.ArticleService) *ArticleHandler {
+func NewArticleHandler(l logger.LoggerV1, svc service.ArticleService, interSvc service.InteractiveService) *ArticleHandler {
 	return &ArticleHandler{
-		svc: svc,
-		l:   l,
+		svc:      svc,
+		interSvc: interSvc,
+		l:        l,
 	}
 }
 
@@ -37,6 +40,9 @@ func (h *ArticleHandler) RegisterRoutes(server *gin.Engine) {
 
 	pub := g.Group("/pub")
 	pub.GET("/:id", h.PubDetail)
+	// 传入一个参数，true就是点赞，false就是取消点赞
+	pub.POST("/like", h.Like)
+	pub.POST("/collect", h.Collect)
 }
 
 // Edit 接受 Article 输入，返回一个ID，文章的ID
@@ -214,26 +220,127 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 		return
 	}
 
-	art, err := h.svc.GetPubById(ctx, id)
+	var (
+		eg   errgroup.Group
+		art  domain.Article
+		intr domain.Interactive
+	)
+
+	eg.Go(func() error {
+		var er error
+		art, er = h.svc.GetPubById(ctx, id)
+		return er
+	})
+	uid := ctx.MustGet("user-id").(int64)
+	eg.Go(func() error {
+		var er error
+		intr, er = h.interSvc.Get(ctx, "article", id, uid)
+		return er
+	})
+
+	err = eg.Wait()
+
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,
 			Msg:  "系统错误",
 		})
+		h.l.Error("查询文章失败,系统错误",
+			logger.Int64("aid", id),
+			logger.Int64("uid", uid),
+			logger.Error(err))
 		return
 	}
+	err = h.interSvc.IncrReadCnt(ctx, "article", art.Id)
+	if err != nil {
+		h.l.Error("更新阅读数失败",
+			logger.Int64("aid", id),
+			logger.Error(err))
+	}
 	vo := ArticleVo{
-		Id:         art.Id,
-		Title:      art.Title,
-		Content:    art.Content,
+		Id:      art.Id,
+		Title:   art.Title,
+		Content: art.Content,
+
 		AuthorId:   art.Author.Id,
 		AuthorName: art.Author.Name,
-		Status:     art.Status.ToUint8(),
-		CTime:      art.CTime.Format(time.DateTime),
-		UTime:      art.UTime.Format(time.DateTime),
+
+		ReadCnt:    intr.ReadCnt,
+		LikeCnt:    intr.LikeCnt,
+		CollectCnt: intr.CollectCnt,
+		Liked:      intr.Liked,
+		Collected:  intr.Collected,
+
+		Status: art.Status.ToUint8(),
+		CTime:  art.CTime.Format(time.DateTime),
+		UTime:  art.UTime.Format(time.DateTime),
 	}
 	ctx.JSON(http.StatusOK, Result{
 		Data: vo,
+	})
+}
+
+func (h *ArticleHandler) Like(ctx *gin.Context) {
+	type Req struct {
+		Id   int64 `json:"id"`
+		Like bool  `json:"like"`
+	}
+
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	uid := ctx.MustGet("user-id").(int64)
+	var err error
+	if req.Like {
+		err = h.interSvc.Like(ctx, "article", req.Id, uid)
+	} else {
+		err = h.interSvc.CancelLike(ctx, "article", req.Id, uid)
+	}
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		h.l.Error("点赞/取消点赞失败",
+			logger.Error(err),
+			logger.Int64("aid", req.Id),
+			logger.Int64("uid", uid),
+		)
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Msg: "OK",
+	})
+}
+
+func (h *ArticleHandler) Collect(ctx *gin.Context) {
+	type Req struct {
+		Id  int64 `json:"id"`
+		Cid int64 `json:"cid"`
+	}
+
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	uid := ctx.MustGet("user-id").(int64)
+
+	err := h.interSvc.Collect(ctx, "article", req.Id, uid, req.Cid)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		h.l.Error("收藏失败",
+			logger.Error(err),
+			logger.Int64("aid", req.Id),
+			logger.Int64("uid", uid),
+		)
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Msg: "OK",
 	})
 }
 
