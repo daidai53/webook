@@ -8,7 +8,14 @@ import (
 
 func main() {
 	initViperRemote()
-	server := InitWebServer()
+	app := InitWebServer()
+	server := app.server
+	for _, c := range app.consumers {
+		err := c.Start()
+		if err != nil {
+			panic(err)
+		}
+	}
 	server.Run(":8081")
 }
 

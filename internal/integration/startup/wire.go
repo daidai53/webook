@@ -4,6 +4,7 @@
 package startup
 
 import (
+	"github.com/daidai53/webook/internal/events/article"
 	"github.com/daidai53/webook/internal/repository"
 	"github.com/daidai53/webook/internal/repository/cache"
 	"github.com/daidai53/webook/internal/repository/dao"
@@ -48,6 +49,10 @@ func InitWebServer() *gin.Engine {
 		repository.NewCachedArticleRepository,
 		repository.NewCachedInteractiveRepository,
 
+		InitSaramaClient,
+		ioc.InitSyncProducer,
+		article.NewSaramaSyncProducer,
+
 		// service部分
 		ioc.InitSmsService,
 		service.NewUserService,
@@ -69,6 +74,9 @@ func InitWebServer() *gin.Engine {
 func InitArticleHandler(artDao dao.ArticleDAO, interDao dao.InteractiveDAO, userDao dao.UserDAO) *web.ArticleHandler {
 	wire.Build(
 		thirdPartySet,
+		InitSaramaClient,
+		ioc.InitSyncProducer,
+		article.NewSaramaSyncProducer,
 		repository.NewCachedUserRepository,
 		repository.NewCachedArticleRepository,
 		repository.NewCachedInteractiveRepository,

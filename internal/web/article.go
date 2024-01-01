@@ -226,12 +226,13 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 		intr domain.Interactive
 	)
 
+	uid := ctx.MustGet("user-id").(int64)
 	eg.Go(func() error {
 		var er error
-		art, er = h.svc.GetPubById(ctx, id)
+		art, er = h.svc.GetPubById(ctx, id, uid)
 		return er
 	})
-	uid := ctx.MustGet("user-id").(int64)
+
 	eg.Go(func() error {
 		var er error
 		intr, er = h.interSvc.Get(ctx, "article", id, uid)
@@ -251,12 +252,12 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 			logger.Error(err))
 		return
 	}
-	err = h.interSvc.IncrReadCnt(ctx, "article", art.Id)
-	if err != nil {
-		h.l.Error("更新阅读数失败",
-			logger.Int64("aid", id),
-			logger.Error(err))
-	}
+	//err = h.interSvc.IncrReadCnt(ctx, "article", art.Id)
+	//if err != nil {
+	//	h.l.Error("更新阅读数失败",
+	//		logger.Int64("aid", id),
+	//		logger.Error(err))
+	//}
 	vo := ArticleVo{
 		Id:      art.Id,
 		Title:   art.Title,

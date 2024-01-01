@@ -4,6 +4,7 @@
 package main
 
 import (
+	"github.com/daidai53/webook/internal/events/article"
 	"github.com/daidai53/webook/internal/repository"
 	"github.com/daidai53/webook/internal/repository/cache"
 	"github.com/daidai53/webook/internal/repository/dao"
@@ -11,7 +12,6 @@ import (
 	"github.com/daidai53/webook/internal/web"
 	ijwt "github.com/daidai53/webook/internal/web/jwt"
 	"github.com/daidai53/webook/ioc"
-	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 )
 
@@ -22,17 +22,23 @@ var interactiveSvcSet = wire.NewSet(
 	service.NewInteractiveService,
 )
 
-func InitWebServer() *gin.Engine {
+func InitWebServer() *App {
 	wire.Build(
 		// 第三方依赖
 		ioc.InitDB,
 		ioc.InitRedisClient,
 		ioc.InitLogger,
+		ioc.InitSaramaClient,
+		ioc.InitSyncProducer,
 		dao.NewUserDAO,
 		dao.NewArticleGormDAO,
 		//ioc.NewLocalCacheDefault,
 
 		interactiveSvcSet,
+
+		article.NewSaramaSyncProducer,
+		article.NewInteractiveReadEventConsumer,
+		ioc.InitConsumers,
 
 		// cache部分
 		cache.NewRedisCodeCache,
@@ -59,6 +65,8 @@ func InitWebServer() *gin.Engine {
 		ijwt.NewRedisJWTHandler,
 		ioc.InitWebServer,
 		ioc.InitGinMiddlewares,
+
+		wire.Struct(new(App), "*"),
 	)
-	return gin.Default()
+	return new(App)
 }

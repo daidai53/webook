@@ -10,6 +10,7 @@ import (
 
 type InteractiveDAO interface {
 	IncrReadCnt(ctx context.Context, biz string, id int64) error
+	BatchIncrReadCnt(ctx context.Context, biz []string, id []int64) error
 	InsertLikeInfo(ctx context.Context, biz string, id int64, uid int64) error
 	DeleteLikeInfo(ctx context.Context, biz string, id int64, uid int64) error
 	InsertCollectionBiz(ctx context.Context, cb UserCollectionBiz) error
@@ -120,6 +121,19 @@ func (g *GORMInteractiveDAO) DeleteLikeInfo(ctx context.Context, biz string, id 
 			"like_cnt": gorm.Expr("`like_cnt`-1"),
 			"u_time":   now,
 		}).Error
+	})
+}
+
+func (g *GORMInteractiveDAO) BatchIncrReadCnt(ctx context.Context, biz []string, id []int64) error {
+	return g.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		txDAO := NewGORMInteractiveDAO(tx)
+		for i := 0; i < len(biz); i++ {
+			err := txDAO.IncrReadCnt(ctx, biz[i], id[i])
+			if err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }
 
