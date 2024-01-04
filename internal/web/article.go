@@ -17,13 +17,16 @@ import (
 type ArticleHandler struct {
 	svc      service.ArticleService
 	interSvc service.InteractiveService
+	topSvc   service.TopArticlesService
 	l        logger.LoggerV1
 }
 
-func NewArticleHandler(l logger.LoggerV1, svc service.ArticleService, interSvc service.InteractiveService) *ArticleHandler {
+func NewArticleHandler(l logger.LoggerV1, svc service.ArticleService, interSvc service.InteractiveService,
+	topSvc service.TopArticlesService) *ArticleHandler {
 	return &ArticleHandler{
 		svc:      svc,
 		interSvc: interSvc,
+		topSvc:   topSvc,
 		l:        l,
 	}
 }
@@ -43,6 +46,7 @@ func (h *ArticleHandler) RegisterRoutes(server *gin.Engine) {
 	// 传入一个参数，true就是点赞，false就是取消点赞
 	pub.POST("/like", h.Like)
 	pub.POST("/collect", h.Collect)
+	pub.POST("/top", h.TopArticles)
 }
 
 // Edit 接受 Article 输入，返回一个ID，文章的ID
@@ -252,7 +256,7 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 			logger.Error(err))
 		return
 	}
-	//err = h.interSvc.IncrReadCnt(ctx, "article", art.Id)
+	//err = h.interSvc.IncrReadCnt(ctx, "article", art.BizId)
 	//if err != nil {
 	//	h.l.Error("更新阅读数失败",
 	//		logger.Int64("aid", id),
@@ -343,6 +347,28 @@ func (h *ArticleHandler) Collect(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, Result{
 		Msg: "OK",
 	})
+}
+
+func (h *ArticleHandler) TopArticles(ctx *gin.Context) {
+	type Req struct {
+		N int `json:"n"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	res, err := h.topSvc.GetTopArticles(ctx, req.N)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Data: res,
+	})
+
 }
 
 type Page struct {

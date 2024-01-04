@@ -17,6 +17,7 @@ type InteractiveDAO interface {
 	GetLikeInfo(ctx context.Context, biz string, bizId int64, uid int64) (UserLikeBiz, error)
 	GetCollectInfo(ctx context.Context, biz string, bizId int64, uid int64) (UserCollectionBiz, error)
 	Get(ctx context.Context, biz string, bizId int64) (Interactive, error)
+	GetAllArticleLikes() ([]Likes, error)
 }
 
 type GORMInteractiveDAO struct {
@@ -27,6 +28,15 @@ func NewGORMInteractiveDAO(db *gorm.DB) InteractiveDAO {
 	return &GORMInteractiveDAO{
 		db: db,
 	}
+}
+
+func (g *GORMInteractiveDAO) GetAllArticleLikes() ([]Likes, error) {
+	var res []Likes
+	err := g.db.Model(&Interactive{}).Select([]string{"biz_id", "like_cnt"}).Where("biz=?", "article").Find(&res).Error
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (g *GORMInteractiveDAO) Get(ctx context.Context, biz string, bizId int64) (Interactive, error) {
@@ -185,4 +195,9 @@ type Interactive struct {
 	CollectCnt int64
 	UTime      int64
 	CTime      int64
+}
+
+type Likes struct {
+	BizId   int64
+	LikeCnt int64
 }

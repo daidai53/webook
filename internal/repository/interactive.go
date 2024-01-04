@@ -20,20 +20,37 @@ type InteractiveRepository interface {
 	Get(ctx context.Context, biz string, bizId int64) (domain.Interactive, error)
 	Liked(ctx context.Context, biz string, bizId int64, uid int64) (bool, error)
 	Collected(ctx context.Context, biz string, bizId int64, uid int64) (bool, error)
+	TopIds(ctx context.Context, n int) ([]int64, error)
 }
 
 type CachedInteractiveRepository struct {
 	dao   dao.InteractiveDAO
 	cache cache.InteractiveCache
+	top   cache.TopLikesArticleCache
 	l     logger.LoggerV1
 }
 
-func NewCachedInteractiveRepository(dao dao.InteractiveDAO, cache cache.InteractiveCache, l logger.LoggerV1) InteractiveRepository {
-	return &CachedInteractiveRepository{
+func NewCachedInteractiveRepository(dao dao.InteractiveDAO, cache cache.InteractiveCache, top cache.TopLikesArticleCache,
+	l logger.LoggerV1) InteractiveRepository {
+	ret := &CachedInteractiveRepository{
 		dao:   dao,
 		cache: cache,
+		top:   top,
 		l:     l,
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
+	allLikes, err := ret.dao.GetAllArticleLikes()
+	if err != nil {
+		ret.l.Error("GetAllArticleLikes失败", logger.Error(err))
+	} else {
+		ret.top.Init(ctx, allLikes)
+	}
+	return ret
+}
+
+func (c *CachedInteractiveRepository) TopIds(ctx context.Context, n int) ([]int64, error) {
+	return c.top.GetTopLikesIds(ctx, n)
 }
 
 func (c *CachedInteractiveRepository) BatchIncrReadCnt(ctx context.Context, biz []string, bizId []int64) error {
@@ -121,6 +138,10 @@ func (c *CachedInteractiveRepository) IncrLike(ctx context.Context, biz string, 
 	if err != nil {
 		return err
 	}
+	err = c.top.IncrLike(ctx, id, 1)
+	if err != nil {
+		c.l.Error("增加点赞数失败", logger.Error(err))
+	}
 	return c.cache.IncrLikeCntIfPresent(ctx, biz, id)
 }
 
@@ -128,6 +149,10 @@ func (c *CachedInteractiveRepository) DecrLike(ctx context.Context, biz string, 
 	err := c.dao.DeleteLikeInfo(ctx, biz, id, uid)
 	if err != nil {
 		return err
+	}
+	err = c.top.IncrLike(ctx, id, -1)
+	if err != nil {
+		c.l.Error("减少点赞数失败", logger.Error(err))
 	}
 	return c.cache.DecrLikeCntIfPresent(ctx, biz, id)
 }

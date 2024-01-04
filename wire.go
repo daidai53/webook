@@ -45,6 +45,7 @@ func InitWebServer() *App {
 		//cache.NewLocalCodeCache,
 		cache.NewUserCache,
 		cache.NewArticleRedisCache,
+		cache.NewTopLikesCache,
 
 		// repository部分
 		repository.NewCachedCodeRepository,
@@ -57,6 +58,7 @@ func InitWebServer() *App {
 		service.NewUserService,
 		service.NewCodeService,
 		service.NewArticleService,
+		service.NewTopArticlesService,
 
 		// handler部分
 		web.NewUserHandler,
