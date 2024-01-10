@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/daidai53/webook/internal/integration/startup"
-	"github.com/daidai53/webook/internal/web"
+	"github.com/daidai53/webook/pkg/ginx"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -32,7 +32,7 @@ func TestUserHandler_SendSMSCode(t *testing.T) {
 		phone string
 
 		wantCode int
-		wantBody web.Result
+		wantBody ginx.Result
 	}{
 		{
 			name: "发送成功",
@@ -55,7 +55,7 @@ func TestUserHandler_SendSMSCode(t *testing.T) {
 
 			phone:    "123456789",
 			wantCode: http.StatusOK,
-			wantBody: web.Result{
+			wantBody: ginx.Result{
 				Msg: "发送成功",
 			},
 		},
@@ -70,7 +70,7 @@ func TestUserHandler_SendSMSCode(t *testing.T) {
 
 			phone:    "",
 			wantCode: http.StatusOK,
-			wantBody: web.Result{
+			wantBody: ginx.Result{
 				Code: 4,
 				Msg:  "请输入手机号",
 			},
@@ -95,7 +95,7 @@ func TestUserHandler_SendSMSCode(t *testing.T) {
 
 			phone:    "123456789",
 			wantCode: http.StatusOK,
-			wantBody: web.Result{
+			wantBody: ginx.Result{
 				Code: 4,
 				Msg:  "短信发送太频繁，请稍后再试",
 			},
@@ -120,7 +120,7 @@ func TestUserHandler_SendSMSCode(t *testing.T) {
 
 			phone:    "123456789",
 			wantCode: http.StatusOK,
-			wantBody: web.Result{
+			wantBody: ginx.Result{
 				Code: 5,
 				Msg:  "系统错误",
 			},
@@ -144,7 +144,7 @@ func TestUserHandler_SendSMSCode(t *testing.T) {
 				return
 			}
 
-			var res web.Result
+			var res ginx.Result
 			err = json.NewDecoder(recorder.Body).Decode(&res)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.wantBody, res)

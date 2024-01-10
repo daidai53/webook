@@ -8,6 +8,7 @@ import (
 	"github.com/daidai53/webook/internal/domain"
 	"github.com/daidai53/webook/internal/service"
 	svcmocks "github.com/daidai53/webook/internal/service/mocks"
+	"github.com/daidai53/webook/pkg/ginx"
 	"github.com/daidai53/webook/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +25,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 		reqBody string
 
 		wantCode int
-		wantRes  Result
+		wantRes  ginx.Result
 	}{
 		{
 			name: "新建并发表成功",
@@ -45,7 +46,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 	"content":"我的内容"
 }`,
 			wantCode: http.StatusOK,
-			wantRes: Result{
+			wantRes: ginx.Result{
 				Data: float64(1),
 			},
 		},
@@ -70,7 +71,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 	"content":"我的内容"
 }`,
 			wantCode: http.StatusOK,
-			wantRes: Result{
+			wantRes: ginx.Result{
 				Data: float64(1),
 			},
 		},
@@ -93,7 +94,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 	"content":"我的内容"
 }`,
 			wantCode: http.StatusOK,
-			wantRes: Result{
+			wantRes: ginx.Result{
 				Code: 5,
 				Msg:  "系统错误",
 			},
@@ -110,7 +111,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 	"content":"我的内容"
 }`,
 			wantCode: http.StatusBadRequest,
-			wantRes: Result{
+			wantRes: ginx.Result{
 				Data: float64(1),
 			},
 		},
@@ -139,7 +140,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 				return
 			}
 
-			var res Result
+			var res ginx.Result
 			err = json.NewDecoder(record.Body).Decode(&res)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.wantRes, res)

@@ -6,6 +6,7 @@ import (
 	"github.com/daidai53/webook/internal/service"
 	"github.com/daidai53/webook/internal/service/oauth2/wechat"
 	ijwt "github.com/daidai53/webook/internal/web/jwt"
+	"github.com/daidai53/webook/pkg/ginx"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	uuid "github.com/lithammer/shortuuid/v4"
@@ -39,19 +40,19 @@ func (o *OAuth2WechatHandler) Auth2URL(context *gin.Context) {
 	state := uuid.New()
 	val, err := o.svc.AuthURL(context, state)
 	if err != nil {
-		context.JSON(http.StatusOK, Result{
+		context.JSON(http.StatusOK, ginx.Result{
 			Msg:  "构造跳转URL失败",
 			Code: 5,
 		})
 	}
 	err = o.setStateCookie(context, state)
 	if err != nil {
-		context.JSON(http.StatusOK, Result{
+		context.JSON(http.StatusOK, ginx.Result{
 			Code: 5,
 			Msg:  "服务器异常",
 		})
 	}
-	context.JSON(http.StatusOK, Result{
+	context.JSON(http.StatusOK, ginx.Result{
 		Data: val,
 	})
 }
@@ -59,7 +60,7 @@ func (o *OAuth2WechatHandler) Auth2URL(context *gin.Context) {
 func (o *OAuth2WechatHandler) Callback(context *gin.Context) {
 	err := o.verifyState(context)
 	if err != nil {
-		context.JSON(http.StatusOK, Result{
+		context.JSON(http.StatusOK, ginx.Result{
 			Code: 4,
 			Msg:  "非法请求",
 		})
@@ -69,26 +70,26 @@ func (o *OAuth2WechatHandler) Callback(context *gin.Context) {
 	// state := context.Query("state")
 	wechatInfo, err := o.svc.VerifyCode(context, code)
 	if err != nil {
-		context.JSON(http.StatusOK, Result{
+		context.JSON(http.StatusOK, ginx.Result{
 			Msg:  "授权码有误",
 			Code: 4,
 		})
 	}
 	user, err := o.userSvc.FindOrCreateByWeChat(context, wechatInfo)
 	if err != nil {
-		context.JSON(http.StatusOK, Result{
+		context.JSON(http.StatusOK, ginx.Result{
 			Msg:  "系统错误",
 			Code: 5,
 		})
 	}
 	err = o.SetLoginToken(context, user.Id)
 	if err != nil {
-		context.JSON(http.StatusOK, Result{
+		context.JSON(http.StatusOK, ginx.Result{
 			Code: 4,
 			Msg:  "系统错误",
 		})
 	}
-	context.JSON(http.StatusOK, Result{
+	context.JSON(http.StatusOK, ginx.Result{
 		Msg: "OK",
 	})
 }

@@ -100,11 +100,12 @@ func (mr *MockUserServiceMockRecorder) Login(ctx, email, password any) *gomock.C
 }
 
 // Profile mocks base method.
-func (m *MockUserService) Profile(c *gin.Context, userId int64) error {
+func (m *MockUserService) Profile(c context.Context, userId int64) (domain.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Profile", c, userId)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Profile indicates an expected call of Profile.

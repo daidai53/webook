@@ -18,3 +18,33 @@ type ArticleVo struct {
 	Liked      bool  `json:"liked"`
 	Collected  bool  `json:"collected"`
 }
+
+type ArticleEditReq struct {
+	Id      int64
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+type ArticlePubReq struct {
+	Id      int64
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+type ArticleWithdrawReq struct {
+	Id int64
+}
+
+type ArticleLikeReq struct {
+	Id   int64 `json:"id"`
+	Like bool  `json:"like"`
+}
+
+type ArticleCollectReq struct {
+	Id  int64 `json:"id"`
+	Cid int64 `json:"cid"`
+}
+
+type TopReq struct {
+	N int `json:"n"`
+}

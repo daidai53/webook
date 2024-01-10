@@ -9,7 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
-	"net/http"
 )
 
 var (
@@ -21,7 +20,7 @@ var (
 type UserService interface {
 	SignUp(ctx context.Context, user domain.User) error
 	Login(ctx context.Context, email string, password string) (domain.User, error)
-	Profile(c *gin.Context, userId int64) error
+	Profile(c context.Context, userId int64) (domain.User, error)
 	Edit(c *gin.Context, idInt64 int64, nickname, birthday, aboutMe string) error
 	FindOrCreate(c *gin.Context, phone string) (domain.User, error)
 	FindOrCreateByWeChat(c context.Context, info domain.WeChatInfo) (domain.User, error)
@@ -62,14 +61,8 @@ func (u *userService) Login(ctx context.Context, email string, password string) 
 	return usr, nil
 }
 
-func (u *userService) Profile(c *gin.Context, userId int64) error {
-	usr, err := u.repo.FindById(c, userId)
-	if errors.Is(err, repository.ErrUserNotFound) {
-		c.String(http.StatusOK, "系统错误")
-		return err
-	}
-	c.JSON(http.StatusOK, toJson(usr))
-	return nil
+func (u *userService) Profile(c context.Context, userId int64) (domain.User, error) {
+	return u.repo.FindById(c, userId)
 }
 
 func (u *userService) Edit(c *gin.Context, idInt64 int64, nickname, birthday, aboutMe string) error {

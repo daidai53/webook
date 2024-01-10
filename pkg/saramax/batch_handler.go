@@ -30,7 +30,6 @@ func (b *BatchHandler[T]) Cleanup(session sarama.ConsumerGroupSession) error {
 }
 
 func (b *BatchHandler[T]) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	b.l.Error("ConsumeClaim666")
 	msgs := claim.Messages()
 	const batchSize = 10
 	for {
