@@ -7,6 +7,7 @@ import (
 	"github.com/daidai53/webook/internal/repository"
 	"github.com/daidai53/webook/pkg/logger"
 	"github.com/daidai53/webook/pkg/saramax"
+	"github.com/prometheus/client_golang/prometheus"
 	"time"
 )
 
@@ -33,7 +34,12 @@ func (i *InteractiveReadEventConsumer) Start() error {
 	go func() {
 		er := cg.Consume(context.Background(),
 			[]string{TopicReadEvent},
-			saramax.NewBatchHandler[ReadEvent](i.BatchConsume, i.l),
+			saramax.NewBatchHandler[ReadEvent](i.BatchConsume, i.l,
+				prometheus.CounterOpts{
+					Namespace: "daidai53",
+					Subsystem: "webook",
+					Name:      "biz_kafka",
+				}),
 		)
 		if er != nil {
 			i.l.Error("退出消费",

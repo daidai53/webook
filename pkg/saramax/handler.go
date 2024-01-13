@@ -28,7 +28,6 @@ func (h *Handler[T]) Cleanup(session sarama.ConsumerGroupSession) error {
 }
 
 func (h *Handler[T]) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	h.l.Error("88888888")
 	msgs := claim.Messages()
 	for msg := range msgs {
 		var t T
