@@ -16,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	prometheus2 "github.com/prometheus/client_golang/prometheus"
 	goredis "github.com/redis/go-redis/v9"
+	otelgin "go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"time"
 )
 
@@ -53,6 +54,7 @@ func InitGinMiddlewares(redisClient goredis.Cmdable, hdl ijwt.Handler, l logger.
 		}),
 		promBuilder.BuildResponseTime(),
 		promBuilder.BuildActiveRequest(),
+		otelgin.Middleware("webook"),
 		middleware.NewLogMiddlewareBuilder(func(ctx context.Context, al middleware.AccessLog) {
 			l.Debug("", logger.Field{Key: "req", Val: al})
 		}).AllowReqBody().AllowRespBody().Build(),

@@ -113,7 +113,7 @@ func (h *ArticleHandler) List(ctx *gin.Context) {
 		return
 	}
 	uc := ctx.MustGet("user").(jwt.UserClaim)
-	arts, err := h.svc.GetByAuhtor(ctx, uc.Uid, page.Offset, page.Limit)
+	arts, err := h.svc.GetByAuthor(ctx.Request.Context(), uc.Uid, page.Offset, page.Limit)
 	if err != nil {
 		ctx.JSON(http.StatusOK, ginx.Result{
 			Code: 5,

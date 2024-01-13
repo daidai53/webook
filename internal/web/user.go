@@ -58,14 +58,14 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug.POST("/login_sms", ginx.WrapBody(u.LoginSMS))
 }
 
-func (u *UserHandler) SendSMSLoginCode(context *gin.Context, req SendSMSCodeReq) (ginx.Result, error) {
+func (u *UserHandler) SendSMSLoginCode(ctx *gin.Context, req SendSMSCodeReq) (ginx.Result, error) {
 	if req.Phone == "" {
 		return ginx.Result{
 			Code: 4,
 			Msg:  "请输入手机号",
 		}, nil
 	}
-	err := u.codeSvc.Send(context, bizLogin, req.Phone)
+	err := u.codeSvc.Send(ctx.Request.Context(), bizLogin, req.Phone)
 	switch {
 	case err == nil:
 		return ginx.Result{

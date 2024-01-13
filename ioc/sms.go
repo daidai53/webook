@@ -4,6 +4,7 @@ package ioc
 import (
 	"github.com/daidai53/webook/internal/service/sms"
 	"github.com/daidai53/webook/internal/service/sms/localsms"
+	"github.com/daidai53/webook/internal/service/sms/opentelemetry"
 	"github.com/daidai53/webook/internal/service/sms/tencent"
 	"github.com/daidai53/webook/pkg/limiter"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
@@ -14,7 +15,7 @@ import (
 )
 
 func InitSmsService() sms.Service {
-	return localsms.NewService()
+	return opentelemetry.NewDecorator(localsms.NewService())
 	//return initTencentSmsService()
 }
 
