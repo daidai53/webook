@@ -20,16 +20,18 @@ import (
 
 func TestArticleHandler_Publish(t *testing.T) {
 	testCases := []struct {
-		name    string
-		mock    func(ctrl *gomock.Controller) service.ArticleService
-		reqBody string
+		name      string
+		mockArti  func(ctrl *gomock.Controller) service.ArticleService
+		mockInter func(ctrl *gomock.Controller) service.InteractiveService
+		mockTop   func(ctrl *gomock.Controller) service.TopArticlesService
+		reqBody   string
 
 		wantCode int
 		wantRes  ginx.Result
 	}{
 		{
 			name: "新建并发表成功",
-			mock: func(ctrl *gomock.Controller) service.ArticleService {
+			mockArti: func(ctrl *gomock.Controller) service.ArticleService {
 				svc := svcmocks.NewMockArticleService(ctrl)
 				svc.EXPECT().Publish(gomock.Any(), domain.Article{
 					Title:   "我的标题",
@@ -52,7 +54,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 		},
 		{
 			name: "已有帖子发表失败",
-			mock: func(ctrl *gomock.Controller) service.ArticleService {
+			mockArti: func(ctrl *gomock.Controller) service.ArticleService {
 				svc := svcmocks.NewMockArticleService(ctrl)
 				svc.EXPECT().Publish(gomock.Any(), domain.Article{
 					Id:      int64(123),
@@ -77,7 +79,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 		},
 		{
 			name: "发表失败",
-			mock: func(ctrl *gomock.Controller) service.ArticleService {
+			mockArti: func(ctrl *gomock.Controller) service.ArticleService {
 				svc := svcmocks.NewMockArticleService(ctrl)
 				svc.EXPECT().Publish(gomock.Any(), domain.Article{
 					Title:   "我的标题",
@@ -85,7 +87,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 					Author: domain.Author{
 						Id: int64(123),
 					},
-				}).Return(int64(0), errors.New("mock error"))
+				}).Return(int64(0), errors.New("mockArti error"))
 				return svc
 			},
 			reqBody: `
@@ -101,7 +103,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 		},
 		{
 			name: "Bind错误",
-			mock: func(ctrl *gomock.Controller) service.ArticleService {
+			mockArti: func(ctrl *gomock.Controller) service.ArticleService {
 				svc := svcmocks.NewMockArticleService(ctrl)
 				return svc
 			},
@@ -121,8 +123,10 @@ func TestArticleHandler_Publish(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			articleSvc := tc.mock(ctrl)
-			hdl := NewArticleHandler(logger.NewNopLogger(), articleSvc)
+			articleSvc := tc.mockArti(ctrl)
+			interSvc := tc.mockInter(ctrl)
+			topSvc := tc.mockTop(ctrl)
+			hdl := NewArticleHandler(logger.NewNopLogger(), articleSvc, interSvc, topSvc)
 
 			server := gin.Default()
 			server.Use(func(ctx *gin.Context) {

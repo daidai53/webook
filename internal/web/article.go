@@ -19,15 +19,17 @@ type ArticleHandler struct {
 	svc      service.ArticleService
 	interSvc service.InteractiveService
 	topSvc   service.TopArticlesService
+	rankSvc  service.RankingService
 	l        logger.LoggerV1
 }
 
 func NewArticleHandler(l logger.LoggerV1, svc service.ArticleService, interSvc service.InteractiveService,
-	topSvc service.TopArticlesService) *ArticleHandler {
+	topSvc service.TopArticlesService, rank service.RankingService) *ArticleHandler {
 	return &ArticleHandler{
 		svc:      svc,
 		interSvc: interSvc,
 		topSvc:   topSvc,
+		rankSvc:  rank,
 		l:        l,
 	}
 }
@@ -48,6 +50,7 @@ func (h *ArticleHandler) RegisterRoutes(server *gin.Engine) {
 	pub.POST("/like", ginx.WrapBodyAndClaims(h.Like))
 	pub.POST("/collect", ginx.WrapBodyAndClaims(h.Collect))
 	pub.POST("/top", ginx.WrapBody(h.TopArticles))
+	pub.GET("/rank", h.RankArticle)
 }
 
 // Edit 接受 Article 输入，返回一个ID，文章的ID
@@ -304,6 +307,21 @@ func (h *ArticleHandler) TopArticles(ctx *gin.Context, req TopReq) (ginx.Result,
 		Data: res,
 	}, nil
 
+}
+
+func (h *ArticleHandler) RankArticle(ctx *gin.Context) {
+	res, err := h.rankSvc.GetTopN(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusOK, ginx.Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		h.l.Error("获取Rank错误", logger.Error(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, ginx.Result{
+		Data: res,
+	})
 }
 
 type Page struct {

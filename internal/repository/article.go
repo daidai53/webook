@@ -19,6 +19,7 @@ type ArticleRepository interface {
 	GetByAuthor(ctx context.Context, uid int64, offset int, limit int) ([]domain.Article, error)
 	GetById(ctx context.Context, id int64) (domain.Article, error)
 	GetPubById(ctx context.Context, id int64) (domain.Article, error)
+	ListPub(ctx context.Context, start time.Time, offset int, limit int) ([]domain.Article, error)
 }
 
 type CachedArticleRepository struct {
@@ -39,6 +40,16 @@ func NewCachedArticleRepository(dao dao.ArticleDAO, cache cache.ArticleCache, us
 		cache:    cache,
 		userRepo: userRepo,
 	}
+}
+
+func (c *CachedArticleRepository) ListPub(ctx context.Context, start time.Time, offset int, limit int) ([]domain.Article, error) {
+	arts, err := c.dao.ListPub(ctx, start, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+	return slice.Map(arts, func(idx int, src dao.PublishedArticle) domain.Article {
+		return c.toDomain(dao.Article(src))
+	}), nil
 }
 
 func (c *CachedArticleRepository) GetPubById(ctx context.Context, id int64) (domain.Article, error) {

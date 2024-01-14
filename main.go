@@ -21,6 +21,10 @@ func main() {
 		tpCancel(tpCtx)
 	}()
 	app := InitWebServer()
+	app.cron.Start()
+	defer func() {
+		<-app.cron.Stop().Done()
+	}()
 	server := app.server
 	for _, c := range app.consumers {
 		err := c.Start()
