@@ -5,6 +5,7 @@ package startup
 
 import (
 	"github.com/daidai53/webook/internal/events/article"
+	"github.com/daidai53/webook/internal/job"
 	"github.com/daidai53/webook/internal/repository"
 	"github.com/daidai53/webook/internal/repository/cache"
 	"github.com/daidai53/webook/internal/repository/dao"
@@ -21,6 +22,11 @@ var thirdPartySet = wire.NewSet(
 	InitRedis,
 	ioc.InitLogger,
 )
+
+var jobProviderSet = wire.NewSet(
+	service.NewCronJobService,
+	repository.NewPreemptJobRepository,
+	dao.NewGormJobDAO)
 
 func InitWebServer() *gin.Engine {
 	wire.Build(
@@ -42,12 +48,15 @@ func InitWebServer() *gin.Engine {
 		cache.NewArticleRedisCache,
 		cache.NewInteractiveRedisCache,
 		cache.NewUserCache,
+		cache.NewTopLikesCache,
+		cache.NewRankingRedisCache,
 
 		// repository部分
 		repository.NewCachedCodeRepository,
 		repository.NewCachedUserRepository,
 		repository.NewCachedArticleRepository,
 		repository.NewCachedInteractiveRepository,
+		repository.NewCachedRankingRepository,
 
 		InitSaramaClient,
 		ioc.InitSyncProducer,
@@ -59,6 +68,8 @@ func InitWebServer() *gin.Engine {
 		service.NewCodeService,
 		service.NewArticleService,
 		service.NewInteractiveService,
+		service.NewTopArticlesService,
+		service.NewBatchRankingService,
 
 		// handler部分
 		web.NewUserHandler,
@@ -80,12 +91,22 @@ func InitArticleHandler(artDao dao.ArticleDAO, interDao dao.InteractiveDAO, user
 		repository.NewCachedUserRepository,
 		repository.NewCachedArticleRepository,
 		repository.NewCachedInteractiveRepository,
+		repository.NewCachedRankingRepository,
 		service.NewArticleService,
 		service.NewInteractiveService,
+		service.NewTopArticlesService,
+		service.NewBatchRankingService,
 		cache.NewInteractiveRedisCache,
 		cache.NewArticleRedisCache,
 		cache.NewUserCache,
+		cache.NewTopLikesCache,
+		cache.NewRankingRedisCache,
 		web.NewArticleHandler,
 	)
 	return &web.ArticleHandler{}
+}
+
+func InitJobScheduler() *job.Scheduler {
+	wire.Build(jobProviderSet, thirdPartySet, job.NewScheduler)
+	return &job.Scheduler{}
 }

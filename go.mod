@@ -20,7 +20,7 @@ require (
 	github.com/lithammer/shortuuid/v4 v4.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.17.0
-	github.com/redis/go-redis/v9 v9.2.1
+	github.com/redis/go-redis/v9 v9.3.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/viper v1.17.0
 	github.com/stretchr/testify v1.8.4
@@ -83,6 +83,7 @@ require (
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/gorilla/sessions v1.2.1 // indirect
+	github.com/gotomicro/redis-lock v0.0.3 // indirect
 	github.com/hashicorp/consul/api v1.25.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect

@@ -11,8 +11,15 @@ import (
 )
 
 func InitTable(db *gorm.DB) error {
-	return db.AutoMigrate(&User{}, &Article{}, &PublishedArticle{}, &Interactive{},
-		&UserLikeBiz{}, &UserCollectionBiz{})
+	return db.AutoMigrate(
+		&User{},
+		&Article{},
+		&PublishedArticle{},
+		&Interactive{},
+		&UserLikeBiz{},
+		&UserCollectionBiz{},
+		&Job{},
+	)
 }
 
 func InitCollection(mdb *mongo.Database) error {

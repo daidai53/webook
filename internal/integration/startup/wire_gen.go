@@ -8,6 +8,7 @@ package startup
 
 import (
 	"github.com/daidai53/webook/internal/events/article"
+	"github.com/daidai53/webook/internal/job"
 	"github.com/daidai53/webook/internal/repository"
 	"github.com/daidai53/webook/internal/repository/cache"
 	"github.com/daidai53/webook/internal/repository/dao"
@@ -45,9 +46,14 @@ func InitWebServer() *gin.Engine {
 	articleService := service.NewArticleService(articleRepository, producer)
 	interactiveDAO := dao.NewGORMInteractiveDAO(db)
 	interactiveCache := cache.NewInteractiveRedisCache(cmdable)
-	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, loggerV1)
+	topLikesArticleCache := cache.NewTopLikesCache(cmdable, loggerV1)
+	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, topLikesArticleCache, loggerV1)
 	interactiveService := service.NewInteractiveService(interactiveRepository)
-	articleHandler := web.NewArticleHandler(loggerV1, articleService, interactiveService)
+	topArticlesService := service.NewTopArticlesService(articleRepository, interactiveRepository)
+	rankingCache := cache.NewRankingRedisCache(cmdable)
+	rankingRepository := repository.NewCachedRankingRepository(rankingCache)
+	rankingService := service.NewBatchRankingService(interactiveService, articleService, rankingRepository)
+	articleHandler := web.NewArticleHandler(loggerV1, articleService, interactiveService, topArticlesService, rankingService)
 	wechatService := ioc.InitWechatService(loggerV1)
 	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService, handler)
 	engine := ioc.InitWebServer(v, userHandler, articleHandler, oAuth2WechatHandler)
@@ -66,10 +72,25 @@ func InitArticleHandler(artDao dao.ArticleDAO, interDao dao.InteractiveDAO, user
 	producer := article.NewSaramaSyncProducer(syncProducer)
 	articleService := service.NewArticleService(articleRepository, producer)
 	interactiveCache := cache.NewInteractiveRedisCache(cmdable)
-	interactiveRepository := repository.NewCachedInteractiveRepository(interDao, interactiveCache, loggerV1)
+	topLikesArticleCache := cache.NewTopLikesCache(cmdable, loggerV1)
+	interactiveRepository := repository.NewCachedInteractiveRepository(interDao, interactiveCache, topLikesArticleCache, loggerV1)
 	interactiveService := service.NewInteractiveService(interactiveRepository)
-	articleHandler := web.NewArticleHandler(loggerV1, articleService, interactiveService)
+	topArticlesService := service.NewTopArticlesService(articleRepository, interactiveRepository)
+	rankingCache := cache.NewRankingRedisCache(cmdable)
+	rankingRepository := repository.NewCachedRankingRepository(rankingCache)
+	rankingService := service.NewBatchRankingService(interactiveService, articleService, rankingRepository)
+	articleHandler := web.NewArticleHandler(loggerV1, articleService, interactiveService, topArticlesService, rankingService)
 	return articleHandler
+}
+
+func InitJobScheduler() *job.Scheduler {
+	db := InitDB()
+	jobDAO := dao.NewGormJobDAO(db)
+	jobRepository := repository.NewPreemptJobRepository(jobDAO)
+	loggerV1 := ioc.InitLogger()
+	cronJobService := service.NewCronJobService(jobRepository, loggerV1)
+	scheduler := job.NewScheduler(cronJobService, loggerV1)
+	return scheduler
 }
 
 // wire.go:
@@ -78,3 +99,5 @@ var thirdPartySet = wire.NewSet(
 	InitDB,
 	InitRedis, ioc.InitLogger,
 )
+
+var jobProviderSet = wire.NewSet(service.NewCronJobService, repository.NewPreemptJobRepository, dao.NewGormJobDAO)
