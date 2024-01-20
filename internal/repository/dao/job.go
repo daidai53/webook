@@ -16,18 +16,25 @@ type JobDAO interface {
 
 type GormJobDAO struct {
 	db *gorm.DB
+
+	interval time.Duration
 }
 
 func NewGormJobDAO(db *gorm.DB) JobDAO {
-	return &GormJobDAO{db: db}
+	return &GormJobDAO{
+		db:       db,
+		interval: time.Minute,
+	}
 }
 
 func (g *GormJobDAO) Preempt(ctx context.Context) (Job, error) {
 	db := g.db.WithContext(ctx)
 	for {
 		var j Job
-		now := time.Now().UnixMilli()
-		err := db.Where("status = ? AND next_time<?", JobStatusWaiting, now).
+		now := time.Now()
+		nowUm := now.UnixMilli()
+		err := db.Where("(status = ? AND next_time<?) OR (status = ? AND next_time<? AND u_time<?)", JobStatusWaiting, nowUm,
+			JobStatusRunning, nowUm, now.Add(-1*g.interval).UnixMilli()).
 			First(&j).Error
 		if err != nil {
 			return j, err
@@ -38,7 +45,7 @@ func (g *GormJobDAO) Preempt(ctx context.Context) (Job, error) {
 			Updates(map[string]any{
 				"status":  JobStatusRunning,
 				"version": j.Version + 1,
-				"u_time":  now,
+				"u_time":  nowUm,
 			})
 		if res.Error != nil {
 			return Job{}, res.Error
