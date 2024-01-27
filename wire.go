@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/daidai53/webook/interactive/events"
-	repository2 "github.com/daidai53/webook/interactive/repository"
 	cache2 "github.com/daidai53/webook/interactive/repository/cache"
 	dao2 "github.com/daidai53/webook/interactive/repository/dao"
 	service2 "github.com/daidai53/webook/interactive/service"
@@ -22,7 +21,6 @@ import (
 
 var interactiveSvcSet = wire.NewSet(
 	dao2.NewGORMInteractiveDAO,
-	repository2.NewCachedInteractiveRepository,
 	cache2.NewInteractiveRedisCache,
 	service2.NewInteractiveService,
 )
@@ -45,35 +43,38 @@ func InitWebServer() *App {
 		dao.NewArticleGormDAO,
 		//ioc.NewLocalCacheDefault,
 
-		interactiveSvcSet,
-		rankingSvcSet,
 		ioc.InitRlockClient,
 		ioc.InitJobs,
 		ioc.InitRankingJob,
 		ioc.InitInterClient,
-
+		ioc.InitInterRepoClient,
 		article.NewSaramaSyncProducer,
+
 		events.NewInteractiveReadEventConsumer,
 		ioc.InitConsumers,
-
 		// cache部分
 		cache.NewRedisCodeCache,
+
 		//cache.NewLocalCodeCache,
 		cache.NewUserCache,
 		cache.NewArticleRedisCache,
-		cache2.NewTopLikesCache,
+		//cache2.NewTopLikesCache,
 
 		// repository部分
 		repository.NewCachedCodeRepository,
+
 		repository.NewCachedUserRepository,
 		repository.NewCachedArticleRepository,
+		//repository2.NewCachedInteractiveRepository,
+		ioc.InitWechatService,
 
 		// service部分
 		ioc.InitSmsService,
-		ioc.InitWechatService,
 		service.NewUserService,
 		service.NewCodeService,
 		service.NewArticleService,
+		interactiveSvcSet,
+		rankingSvcSet,
 
 		// handler部分
 		web.NewUserHandler,

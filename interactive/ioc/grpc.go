@@ -16,3 +16,12 @@ func NewGrpcxServer(interSvc *grpc2.InteractiveServiceServer) *grpcx.Server {
 		Addr:   viper.GetString("grpc.server.addr"),
 	}
 }
+
+func NewGrpcxServerV1(interRepo *grpc2.InteractiveRepoServiceServer) *grpcx.Server {
+	s := grpc.NewServer()
+	interRepo.Register(s)
+	return &grpcx.Server{
+		Server: s,
+		Addr:   viper.GetString("grpc.server.addr"),
+	}
+}

@@ -11,4 +11,4 @@ grpc:
     inter:
       addr: "localhost:8090"
       secure: false
-      threshold: 100
+      threshold: 0

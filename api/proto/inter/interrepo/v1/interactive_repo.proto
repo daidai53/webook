@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package interrepo.v1;
+option go_package = "github.com/daidai53/webook/interrepo/v1;interrepov1";
+
+import "inter/v1/interactive.proto";
+
+service InteractiveRepository {
+  rpc IncrReadCnt(IncrReadCntRequest) returns (IncrReadCntResponse);
+  rpc BatchIncrReadCnt(BatchIncrReadCntRequest) returns (BatchIncrReadCntResponse);
+  rpc IncrLike(IncrLikeRequest) returns (IncrLikeResponse);
+  rpc DecrLike(DecrLikeRequest) returns (DecrLikeResponse);
+  rpc AddCollectionItem(AddCollectionItemRequest) returns (AddCollectionItemResponse);
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc Liked(LikedRequest) returns (LikedResponse);
+  rpc Collected(CollectedRequest) returns (CollectedResponse);
+  rpc TopIds(TopIdsRequest) returns (TopIdsResponse);
+  rpc GetByIds(GetByIdsRequest) returns (GetByIdsResponse);
+}
+
+message GetByIdsRequest{
+  string biz = 1;
+  repeated int64 bizIds = 2;
+}
+
+message GetByIdsResponse{
+  repeated inter.v1.Interactive inters = 1;
+}
+
+message TopIdsRequest{
+  int32 n = 1;
+}
+
+message TopIdsResponse{
+  repeated int64 topIds = 1;
+}
+
+message CollectedRequest{
+  string biz = 1;
+  int64 bizId = 2;
+  int64 uid = 3;
+}
+
+message CollectedResponse{
+  bool collected = 1;
+}
+
+message LikedRequest{
+  string biz = 1;
+  int64 bizId = 2;
+  int64 uid = 3;
+}
+
+message LikedResponse{
+  bool liked = 1;
+}
+
+message GetRequest{
+  string biz = 1;
+  int64 bizId = 2;
+}
+
+message GetResponse{
+  inter.v1.Interactive inter = 1;
+}
+
+message AddCollectionItemRequest{
+  string biz = 1;
+  int64 bizId = 2;
+  int64 uid = 3;
+  int64 cid = 4;
+}
+
+message AddCollectionItemResponse{
+
+}
+
+message DecrLikeRequest{
+  string biz = 1;
+  int64 bizId = 2;
+  int64 uid = 3;
+}
+
+message DecrLikeResponse{
+
+}
+
+message IncrLikeRequest{
+  string biz = 1;
+  int64 bizId = 2;
+  int64 uid = 3;
+}
+
+message IncrLikeResponse{
+
+}
+
+message BatchIncrReadCntRequest{
+  repeated string biz = 1;
+  repeated int64 bizId = 2;
+}
+
+message BatchIncrReadCntResponse{
+}
+
+message IncrReadCntRequest{
+  string biz = 1;
+  int64 bizId = 2;
+}
+
+message IncrReadCntResponse{
+
+}

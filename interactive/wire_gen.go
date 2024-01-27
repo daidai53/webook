@@ -7,13 +7,11 @@
 package main
 
 import (
-	"github.com/daidai53/webook/interactive/events"
 	"github.com/daidai53/webook/interactive/grpc"
 	"github.com/daidai53/webook/interactive/ioc"
 	"github.com/daidai53/webook/interactive/repository"
 	"github.com/daidai53/webook/interactive/repository/cache"
 	"github.com/daidai53/webook/interactive/repository/dao"
-	"github.com/daidai53/webook/interactive/service"
 	"github.com/google/wire"
 )
 
@@ -31,15 +29,10 @@ func InitApp() *App {
 	interactiveCache := cache.NewInteractiveRedisCache(cmdable)
 	topLikesArticleCache := cache.NewTopLikesCache(cmdable, loggerV1)
 	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, topLikesArticleCache, loggerV1)
-	client := ioc.InitSaramaClient()
-	interactiveReadEventConsumer := events.NewInteractiveReadEventConsumer(interactiveRepository, client, loggerV1)
-	v := ioc.InitConsumers(interactiveReadEventConsumer)
-	interactiveService := service.NewInteractiveService(interactiveRepository)
-	interactiveServiceServer := grpc.NewInteractiveServiceServer(interactiveService)
-	server := ioc.NewGrpcxServer(interactiveServiceServer)
+	interactiveRepoServiceServer := grpc.NewInteractiveRepoServiceServer(interactiveRepository)
+	server := ioc.NewGrpcxServerV1(interactiveRepoServiceServer)
 	app := &App{
-		consumers: v,
-		server:    server,
+		server: server,
 	}
 	return app
 }
@@ -48,4 +41,4 @@ func InitApp() *App {
 
 var thirdPartySet = wire.NewSet(ioc.InitDB, ioc.InitRedisClient, ioc.InitLogger, ioc.InitSaramaClient)
 
-var interactiveSvcSet = wire.NewSet(dao.NewGORMInteractiveDAO, cache.NewInteractiveRedisCache, cache.NewTopLikesCache, repository.NewCachedInteractiveRepository, service.NewInteractiveService)
+var interactiveSvcSet = wire.NewSet(dao.NewGORMInteractiveDAO, cache.NewInteractiveRedisCache, cache.NewTopLikesCache, repository.NewCachedInteractiveRepository)

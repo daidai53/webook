@@ -4,7 +4,7 @@ package events
 import (
 	"context"
 	"github.com/IBM/sarama"
-	"github.com/daidai53/webook/interactive/repository"
+	interrepov1 "github.com/daidai53/webook/api/proto/gen/inter/interrepo/v1"
 	"github.com/daidai53/webook/pkg/logger"
 	"github.com/daidai53/webook/pkg/saramax"
 	"github.com/prometheus/client_golang/prometheus"
@@ -14,12 +14,12 @@ import (
 const TopicReadEvent = "article_read"
 
 type InteractiveReadEventConsumer struct {
-	repo   repository.InteractiveRepository
+	repo   interrepov1.InteractiveRepositoryClient
 	client sarama.Client
 	l      logger.LoggerV1
 }
 
-func NewInteractiveReadEventConsumer(repo repository.InteractiveRepository, client sarama.Client, l logger.LoggerV1) *InteractiveReadEventConsumer {
+func NewInteractiveReadEventConsumer(repo interrepov1.InteractiveRepositoryClient, client sarama.Client, l logger.LoggerV1) *InteractiveReadEventConsumer {
 	return &InteractiveReadEventConsumer{
 		repo:   repo,
 		client: client,
@@ -79,13 +79,21 @@ func (i *InteractiveReadEventConsumer) BatchConsume(msgs []*sarama.ConsumerMessa
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	return i.repo.BatchIncrReadCnt(ctx, bizs, bizIds)
+	_, err := i.repo.BatchIncrReadCnt(ctx, &interrepov1.BatchIncrReadCntRequest{
+		Biz:   bizs,
+		BizId: bizIds,
+	})
+	return err
 }
 
 func (i *InteractiveReadEventConsumer) Consume(msg *sarama.ConsumerMessage, event ReadEvent) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	return i.repo.IncrReadCnt(ctx, "article", event.Aid)
+	_, err := i.repo.IncrReadCnt(ctx, &interrepov1.IncrReadCntRequest{
+		Biz:   "article",
+		BizId: event.Aid,
+	})
+	return err
 }
 
 type ReadEvent struct {

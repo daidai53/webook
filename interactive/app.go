@@ -2,11 +2,10 @@
 package main
 
 import (
-	"github.com/daidai53/webook/internal/events"
 	"github.com/daidai53/webook/pkg/grpcx"
 )
 
 type App struct {
-	consumers []events.Consumer
-	server    *grpcx.Server
+	//consumers []events.Consumer
+	server *grpcx.Server
 }

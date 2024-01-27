@@ -8,7 +8,6 @@ package main
 
 import (
 	"github.com/daidai53/webook/interactive/events"
-	repository2 "github.com/daidai53/webook/interactive/repository"
 	cache2 "github.com/daidai53/webook/interactive/repository/cache"
 	dao2 "github.com/daidai53/webook/interactive/repository/dao"
 	service2 "github.com/daidai53/webook/interactive/service"
@@ -51,11 +50,8 @@ func InitWebServer() *App {
 	syncProducer := ioc.InitSyncProducer(client)
 	producer := article.NewSaramaSyncProducer(syncProducer)
 	articleService := service.NewArticleService(articleRepository, producer)
-	interactiveDAO := dao2.NewGORMInteractiveDAO(db)
-	interactiveCache := cache2.NewInteractiveRedisCache(cmdable)
-	topLikesArticleCache := cache2.NewTopLikesCache(cmdable, loggerV1)
-	interactiveRepository := repository2.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, topLikesArticleCache, loggerV1)
-	interactiveService := service2.NewInteractiveService(interactiveRepository)
+	interactiveRepositoryClient := ioc.InitInterRepoClient()
+	interactiveService := service2.NewInteractiveService(interactiveRepositoryClient)
 	interactiveServiceClient := ioc.InitInterClient(interactiveService)
 	rankingCache := cache.NewRankingRedisCache(cmdable)
 	rankingRepository := repository.NewCachedRankingRepository(rankingCache)
@@ -64,7 +60,7 @@ func InitWebServer() *App {
 	wechatService := ioc.InitWechatService(loggerV1)
 	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService, handler)
 	engine := ioc.InitWebServer(v, userHandler, articleHandler, oAuth2WechatHandler)
-	interactiveReadEventConsumer := events.NewInteractiveReadEventConsumer(interactiveRepository, client, loggerV1)
+	interactiveReadEventConsumer := events.NewInteractiveReadEventConsumer(interactiveRepositoryClient, client, loggerV1)
 	v2 := ioc.InitConsumers(interactiveReadEventConsumer)
 	rlockClient := ioc.InitRlockClient(cmdable)
 	rankingJob := ioc.InitRankingJob(rankingService, loggerV1, rlockClient)
@@ -79,6 +75,6 @@ func InitWebServer() *App {
 
 // wire.go:
 
-var interactiveSvcSet = wire.NewSet(dao2.NewGORMInteractiveDAO, repository2.NewCachedInteractiveRepository, cache2.NewInteractiveRedisCache, service2.NewInteractiveService)
+var interactiveSvcSet = wire.NewSet(dao2.NewGORMInteractiveDAO, cache2.NewInteractiveRedisCache, service2.NewInteractiveService)
 
 var rankingSvcSet = wire.NewSet(cache.NewRankingRedisCache, repository.NewCachedRankingRepository, service.NewBatchRankingService)
