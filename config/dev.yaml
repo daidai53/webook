@@ -5,3 +5,10 @@ redis:
 kafka:
   addr:
     - "localhost:9094"
+
+grpc:
+  client:
+    inter:
+      addr: "localhost:8090"
+      secure: false
+      threshold: 100

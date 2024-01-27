@@ -3,8 +3,8 @@ package service
 
 import (
 	"context"
-	"github.com/daidai53/webook/internal/domain"
-	"github.com/daidai53/webook/internal/repository"
+	"github.com/daidai53/webook/interactive/domain"
+	"github.com/daidai53/webook/interactive/repository"
 	"golang.org/x/sync/errgroup"
 )
 

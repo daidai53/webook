@@ -4,6 +4,10 @@
 package startup
 
 import (
+	repository2 "github.com/daidai53/webook/interactive/repository"
+	cache2 "github.com/daidai53/webook/interactive/repository/cache"
+	dao2 "github.com/daidai53/webook/interactive/repository/dao"
+	service2 "github.com/daidai53/webook/interactive/service"
 	"github.com/daidai53/webook/internal/events/article"
 	"github.com/daidai53/webook/internal/job"
 	"github.com/daidai53/webook/internal/repository"
@@ -20,7 +24,10 @@ import (
 var thirdPartySet = wire.NewSet(
 	InitDB,
 	InitRedis,
+	InitSaramaClient,
+	InitSyncProducer,
 	ioc.InitLogger,
+	ioc.InitInterClient,
 )
 
 var jobProviderSet = wire.NewSet(
@@ -28,38 +35,42 @@ var jobProviderSet = wire.NewSet(
 	repository.NewPreemptJobRepository,
 	dao.NewGormJobDAO)
 
+var interactiveSvcSet = wire.NewSet(
+	dao2.NewGORMInteractiveDAO,
+	cache2.NewInteractiveRedisCache,
+	repository2.NewCachedInteractiveRepository,
+	service2.NewInteractiveService,
+)
+
 func InitWebServer() *gin.Engine {
 	wire.Build(
 		// 第三方依赖
-		InitDB,
-		InitRedis,
-		ioc.InitLogger,
+		thirdPartySet,
 
 		dao.NewUserDAO,
 		dao.NewArticleGormDAO,
 		ijwt.NewRedisJWTHandler,
 		ioc.InitWechatService,
-		dao.NewGORMInteractiveDAO,
+		dao2.NewGORMInteractiveDAO,
+
 		//ioc.NewLocalCacheDefault,
 
 		// cache部分
 		cache.NewRedisCodeCache,
 		//cache.NewLocalCodeCache,
 		cache.NewArticleRedisCache,
-		cache.NewInteractiveRedisCache,
+		cache2.NewInteractiveRedisCache,
 		cache.NewUserCache,
-		cache.NewTopLikesCache,
+		cache2.NewTopLikesCache,
 		cache.NewRankingRedisCache,
 
 		// repository部分
 		repository.NewCachedCodeRepository,
 		repository.NewCachedUserRepository,
 		repository.NewCachedArticleRepository,
-		repository.NewCachedInteractiveRepository,
+		repository2.NewCachedInteractiveRepository,
 		repository.NewCachedRankingRepository,
 
-		InitSaramaClient,
-		ioc.InitSyncProducer,
 		article.NewSaramaSyncProducer,
 
 		// service部分
@@ -67,8 +78,7 @@ func InitWebServer() *gin.Engine {
 		service.NewUserService,
 		service.NewCodeService,
 		service.NewArticleService,
-		service.NewInteractiveService,
-		service.NewTopArticlesService,
+		service2.NewInteractiveService,
 		service.NewBatchRankingService,
 
 		// handler部分
@@ -82,24 +92,21 @@ func InitWebServer() *gin.Engine {
 	return gin.Default()
 }
 
-func InitArticleHandler(artDao dao.ArticleDAO, interDao dao.InteractiveDAO, userDao dao.UserDAO) *web.ArticleHandler {
+func InitArticleHandler(artDao dao.ArticleDAO, interDao dao2.InteractiveDAO, userDao dao.UserDAO) *web.ArticleHandler {
 	wire.Build(
 		thirdPartySet,
-		InitSaramaClient,
-		ioc.InitSyncProducer,
 		article.NewSaramaSyncProducer,
 		repository.NewCachedUserRepository,
 		repository.NewCachedArticleRepository,
-		repository.NewCachedInteractiveRepository,
+		repository2.NewCachedInteractiveRepository,
 		repository.NewCachedRankingRepository,
 		service.NewArticleService,
-		service.NewInteractiveService,
-		service.NewTopArticlesService,
+		service2.NewInteractiveService,
 		service.NewBatchRankingService,
-		cache.NewInteractiveRedisCache,
+		cache2.NewInteractiveRedisCache,
 		cache.NewArticleRedisCache,
 		cache.NewUserCache,
-		cache.NewTopLikesCache,
+		cache2.NewTopLikesCache,
 		cache.NewRankingRedisCache,
 		web.NewArticleHandler,
 	)

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/daidai53/webook/config"
+	dao2 "github.com/daidai53/webook/interactive/repository/dao"
 	"github.com/daidai53/webook/internal/repository/dao"
 	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,6 +21,10 @@ func InitDB() *gorm.DB {
 		panic(err)
 	}
 	err = dao.InitTable(db)
+	if err != nil {
+		panic(err)
+	}
+	err = dao2.InitTable(db)
 	if err != nil {
 		panic(err)
 	}

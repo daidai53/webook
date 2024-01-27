@@ -14,3 +14,11 @@ func InitSaramaClient() sarama.Client {
 	}
 	return client
 }
+
+func InitSyncProducer(c sarama.Client) sarama.SyncProducer {
+	p, err := sarama.NewSyncProducerFromClient(c)
+	if err != nil {
+		panic(err)
+	}
+	return p
+}

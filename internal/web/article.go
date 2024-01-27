@@ -2,6 +2,7 @@
 package web
 
 import (
+	interv1 "github.com/daidai53/webook/api/proto/gen/inter/v1"
 	"github.com/daidai53/webook/internal/domain"
 	"github.com/daidai53/webook/internal/service"
 	"github.com/daidai53/webook/internal/web/jwt"
@@ -17,18 +18,16 @@ import (
 
 type ArticleHandler struct {
 	svc      service.ArticleService
-	interSvc service.InteractiveService
-	topSvc   service.TopArticlesService
+	interSvc interv1.InteractiveServiceClient
 	rankSvc  service.RankingService
 	l        logger.LoggerV1
 }
 
-func NewArticleHandler(l logger.LoggerV1, svc service.ArticleService, interSvc service.InteractiveService,
-	topSvc service.TopArticlesService, rank service.RankingService) *ArticleHandler {
+func NewArticleHandler(l logger.LoggerV1, svc service.ArticleService, interSvc interv1.InteractiveServiceClient,
+	rank service.RankingService) *ArticleHandler {
 	return &ArticleHandler{
 		svc:      svc,
 		interSvc: interSvc,
-		topSvc:   topSvc,
 		rankSvc:  rank,
 		l:        l,
 	}
@@ -49,7 +48,6 @@ func (h *ArticleHandler) RegisterRoutes(server *gin.Engine) {
 	// 传入一个参数，true就是点赞，false就是取消点赞
 	pub.POST("/like", ginx.WrapBodyAndClaims(h.Like))
 	pub.POST("/collect", ginx.WrapBodyAndClaims(h.Collect))
-	pub.POST("/top", ginx.WrapBody(h.TopArticles))
 	pub.GET("/rank", h.RankArticle)
 }
 
@@ -202,9 +200,9 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 	}
 
 	var (
-		eg   errgroup.Group
-		art  domain.Article
-		intr domain.Interactive
+		eg        errgroup.Group
+		art       domain.Article
+		interResp *interv1.GetResponse
 	)
 
 	uid := ctx.MustGet("user-id").(int64)
@@ -216,7 +214,11 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 
 	eg.Go(func() error {
 		var er error
-		intr, er = h.interSvc.Get(ctx, "article", id, uid)
+		interResp, er = h.interSvc.Get(ctx, &interv1.GetRequest{
+			Biz: "article",
+			Id:  id,
+			Uid: uid,
+		})
 		return er
 	})
 
@@ -239,6 +241,7 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 	//		logger.Int64("aid", id),
 	//		logger.Error(err))
 	//}
+	intr := interResp.GetInter()
 	vo := ArticleVo{
 		Id:      art.Id,
 		Title:   art.Title,
@@ -266,9 +269,17 @@ func (h *ArticleHandler) Like(ctx *gin.Context, req ArticleLikeReq,
 	uc jwt.UserClaim) (ginx.Result, error) {
 	var err error
 	if req.Like {
-		err = h.interSvc.Like(ctx, "article", req.Id, uc.Uid)
+		_, err = h.interSvc.Like(ctx, &interv1.LikeRequest{
+			Biz: "article",
+			Id:  req.Id,
+			Uid: uc.Uid,
+		})
 	} else {
-		err = h.interSvc.CancelLike(ctx, "article", req.Id, uc.Uid)
+		_, err = h.interSvc.CancelLike(ctx, &interv1.CancelLikeRequest{
+			Biz: "article",
+			Id:  req.Id,
+			Uid: uc.Uid,
+		})
 	}
 	if err != nil {
 		return ginx.Result{
@@ -283,7 +294,12 @@ func (h *ArticleHandler) Like(ctx *gin.Context, req ArticleLikeReq,
 
 func (h *ArticleHandler) Collect(ctx *gin.Context, req ArticleCollectReq,
 	uc jwt.UserClaim) (ginx.Result, error) {
-	err := h.interSvc.Collect(ctx, "article", req.Id, uc.Uid, req.Cid)
+	_, err := h.interSvc.Collect(ctx, &interv1.CollectRequest{
+		Biz: "article",
+		Id:  req.Id,
+		Uid: uc.Uid,
+		Cid: req.Cid,
+	})
 	if err != nil {
 		return ginx.Result{
 			Code: 5,
@@ -293,20 +309,6 @@ func (h *ArticleHandler) Collect(ctx *gin.Context, req ArticleCollectReq,
 	return ginx.Result{
 		Msg: "OK",
 	}, nil
-}
-
-func (h *ArticleHandler) TopArticles(ctx *gin.Context, req TopReq) (ginx.Result, error) {
-	res, err := h.topSvc.GetTopArticles(ctx, req.N)
-	if err != nil {
-		return ginx.Result{
-			Code: 5,
-			Msg:  "系统错误",
-		}, err
-	}
-	return ginx.Result{
-		Data: res,
-	}, nil
-
 }
 
 func (h *ArticleHandler) RankArticle(ctx *gin.Context) {

@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+//go:generate mockgen -source=./ranking.go -package=repomocks -destination=./mocks/ranking.mock.go
 type RankingRepository interface {
 	ReplaceTopN(ctx context.Context, arts []domain.Article) error
 	GetTopN(ctx context.Context) ([]domain.Article, error)

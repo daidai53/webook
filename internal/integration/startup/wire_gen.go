@@ -7,6 +7,10 @@
 package startup
 
 import (
+	repository2 "github.com/daidai53/webook/interactive/repository"
+	cache2 "github.com/daidai53/webook/interactive/repository/cache"
+	dao2 "github.com/daidai53/webook/interactive/repository/dao"
+	service2 "github.com/daidai53/webook/interactive/service"
 	"github.com/daidai53/webook/internal/events/article"
 	"github.com/daidai53/webook/internal/job"
 	"github.com/daidai53/webook/internal/repository"
@@ -41,26 +45,26 @@ func InitWebServer() *gin.Engine {
 	articleCache := cache.NewArticleRedisCache(cmdable)
 	articleRepository := repository.NewCachedArticleRepository(articleDAO, articleCache, userRepository)
 	client := InitSaramaClient()
-	syncProducer := ioc.InitSyncProducer(client)
+	syncProducer := InitSyncProducer(client)
 	producer := article.NewSaramaSyncProducer(syncProducer)
 	articleService := service.NewArticleService(articleRepository, producer)
-	interactiveDAO := dao.NewGORMInteractiveDAO(db)
-	interactiveCache := cache.NewInteractiveRedisCache(cmdable)
-	topLikesArticleCache := cache.NewTopLikesCache(cmdable, loggerV1)
-	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, topLikesArticleCache, loggerV1)
-	interactiveService := service.NewInteractiveService(interactiveRepository)
-	topArticlesService := service.NewTopArticlesService(articleRepository, interactiveRepository)
+	interactiveDAO := dao2.NewGORMInteractiveDAO(db)
+	interactiveCache := cache2.NewInteractiveRedisCache(cmdable)
+	topLikesArticleCache := cache2.NewTopLikesCache(cmdable, loggerV1)
+	interactiveRepository := repository2.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, topLikesArticleCache, loggerV1)
+	interactiveService := service2.NewInteractiveService(interactiveRepository)
+	interactiveServiceClient := ioc.InitInterClient(interactiveService)
 	rankingCache := cache.NewRankingRedisCache(cmdable)
 	rankingRepository := repository.NewCachedRankingRepository(rankingCache)
-	rankingService := service.NewBatchRankingService(interactiveService, articleService, rankingRepository)
-	articleHandler := web.NewArticleHandler(loggerV1, articleService, interactiveService, topArticlesService, rankingService)
+	rankingService := service.NewBatchRankingService(interactiveServiceClient, articleService, rankingRepository)
+	articleHandler := web.NewArticleHandler(loggerV1, articleService, interactiveServiceClient, rankingService)
 	wechatService := ioc.InitWechatService(loggerV1)
 	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService, handler)
 	engine := ioc.InitWebServer(v, userHandler, articleHandler, oAuth2WechatHandler)
 	return engine
 }
 
-func InitArticleHandler(artDao dao.ArticleDAO, interDao dao.InteractiveDAO, userDao dao.UserDAO) *web.ArticleHandler {
+func InitArticleHandler(artDao dao.ArticleDAO, interDao dao2.InteractiveDAO, userDao dao.UserDAO) *web.ArticleHandler {
 	loggerV1 := ioc.InitLogger()
 	cmdable := InitRedis()
 	articleCache := cache.NewArticleRedisCache(cmdable)
@@ -68,18 +72,18 @@ func InitArticleHandler(artDao dao.ArticleDAO, interDao dao.InteractiveDAO, user
 	userRepository := repository.NewCachedUserRepository(userDao, userCache)
 	articleRepository := repository.NewCachedArticleRepository(artDao, articleCache, userRepository)
 	client := InitSaramaClient()
-	syncProducer := ioc.InitSyncProducer(client)
+	syncProducer := InitSyncProducer(client)
 	producer := article.NewSaramaSyncProducer(syncProducer)
 	articleService := service.NewArticleService(articleRepository, producer)
-	interactiveCache := cache.NewInteractiveRedisCache(cmdable)
-	topLikesArticleCache := cache.NewTopLikesCache(cmdable, loggerV1)
-	interactiveRepository := repository.NewCachedInteractiveRepository(interDao, interactiveCache, topLikesArticleCache, loggerV1)
-	interactiveService := service.NewInteractiveService(interactiveRepository)
-	topArticlesService := service.NewTopArticlesService(articleRepository, interactiveRepository)
+	interactiveCache := cache2.NewInteractiveRedisCache(cmdable)
+	topLikesArticleCache := cache2.NewTopLikesCache(cmdable, loggerV1)
+	interactiveRepository := repository2.NewCachedInteractiveRepository(interDao, interactiveCache, topLikesArticleCache, loggerV1)
+	interactiveService := service2.NewInteractiveService(interactiveRepository)
+	interactiveServiceClient := ioc.InitInterClient(interactiveService)
 	rankingCache := cache.NewRankingRedisCache(cmdable)
 	rankingRepository := repository.NewCachedRankingRepository(rankingCache)
-	rankingService := service.NewBatchRankingService(interactiveService, articleService, rankingRepository)
-	articleHandler := web.NewArticleHandler(loggerV1, articleService, interactiveService, topArticlesService, rankingService)
+	rankingService := service.NewBatchRankingService(interactiveServiceClient, articleService, rankingRepository)
+	articleHandler := web.NewArticleHandler(loggerV1, articleService, interactiveServiceClient, rankingService)
 	return articleHandler
 }
 
@@ -97,7 +101,11 @@ func InitJobScheduler() *job.Scheduler {
 
 var thirdPartySet = wire.NewSet(
 	InitDB,
-	InitRedis, ioc.InitLogger,
+	InitRedis,
+	InitSaramaClient,
+	InitSyncProducer, ioc.InitLogger, ioc.InitInterClient,
 )
 
 var jobProviderSet = wire.NewSet(service.NewCronJobService, repository.NewPreemptJobRepository, dao.NewGormJobDAO)
+
+var interactiveSvcSet = wire.NewSet(dao2.NewGORMInteractiveDAO, cache2.NewInteractiveRedisCache, repository2.NewCachedInteractiveRepository, service2.NewInteractiveService)

@@ -4,13 +4,16 @@ package repository
 import (
 	"context"
 	"errors"
-	"github.com/daidai53/webook/internal/domain"
-	"github.com/daidai53/webook/internal/repository/cache"
-	"github.com/daidai53/webook/internal/repository/dao"
+	"github.com/daidai53/webook/interactive/domain"
+	cache2 "github.com/daidai53/webook/interactive/repository/cache"
+	dao2 "github.com/daidai53/webook/interactive/repository/dao"
 	"github.com/daidai53/webook/pkg/logger"
 	"github.com/ecodeclub/ekit/slice"
+	"gorm.io/gorm"
 	"time"
 )
+
+var ErrRecordNotFound = gorm.ErrRecordNotFound
 
 type InteractiveRepository interface {
 	IncrReadCnt(ctx context.Context, biz string, bizId int64) error
@@ -26,13 +29,13 @@ type InteractiveRepository interface {
 }
 
 type CachedInteractiveRepository struct {
-	dao   dao.InteractiveDAO
-	cache cache.InteractiveCache
-	top   cache.TopLikesArticleCache
+	dao   dao2.InteractiveDAO
+	cache cache2.InteractiveCache
+	top   cache2.TopLikesArticleCache
 	l     logger.LoggerV1
 }
 
-func NewCachedInteractiveRepository(dao dao.InteractiveDAO, cache cache.InteractiveCache, top cache.TopLikesArticleCache,
+func NewCachedInteractiveRepository(dao dao2.InteractiveDAO, cache cache2.InteractiveCache, top cache2.TopLikesArticleCache,
 	l logger.LoggerV1) InteractiveRepository {
 	ret := &CachedInteractiveRepository{
 		dao:   dao,
@@ -56,7 +59,7 @@ func (c *CachedInteractiveRepository) GetByIds(ctx context.Context, biz string, 
 	if err != nil {
 		return nil, err
 	}
-	return slice.Map(intrs, func(idx int, src dao.Interactive) domain.Interactive {
+	return slice.Map(intrs, func(idx int, src dao2.Interactive) domain.Interactive {
 		return c.toDomain(src)
 	}), nil
 }
@@ -110,7 +113,7 @@ func (c *CachedInteractiveRepository) Liked(ctx context.Context, biz string, biz
 	switch {
 	case err == nil:
 		return true, nil
-	case errors.Is(err, dao.ErrRecordNotFound):
+	case errors.Is(err, ErrRecordNotFound):
 		return false, nil
 	default:
 		return false, err
@@ -122,7 +125,7 @@ func (c *CachedInteractiveRepository) Collected(ctx context.Context, biz string,
 	switch {
 	case err == nil:
 		return true, nil
-	case errors.Is(err, dao.ErrRecordNotFound):
+	case errors.Is(err, ErrRecordNotFound):
 		return false, nil
 	default:
 		return false, err
@@ -131,7 +134,7 @@ func (c *CachedInteractiveRepository) Collected(ctx context.Context, biz string,
 
 func (c *CachedInteractiveRepository) AddCollectionItem(ctx context.Context, biz string, bizId int64, uid int64, cid int64) error {
 	now := time.Now().UnixMilli()
-	err := c.dao.InsertCollectionBiz(ctx, dao.UserCollectionBiz{
+	err := c.dao.InsertCollectionBiz(ctx, dao2.UserCollectionBiz{
 		Biz:   biz,
 		BizId: bizId,
 		Uid:   uid,
@@ -178,7 +181,7 @@ func (c *CachedInteractiveRepository) IncrReadCnt(ctx context.Context, biz strin
 	return c.cache.IncrReadCntIfPresent(ctx, biz, bizId)
 }
 
-func (c *CachedInteractiveRepository) toDomain(ie dao.Interactive) domain.Interactive {
+func (c *CachedInteractiveRepository) toDomain(ie dao2.Interactive) domain.Interactive {
 	return domain.Interactive{
 		BizId:      ie.BizId,
 		ReadCnt:    ie.ReadCnt,

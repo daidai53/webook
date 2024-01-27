@@ -4,6 +4,7 @@ package integration
 import (
 	"bytes"
 	"encoding/json"
+	dao2 "github.com/daidai53/webook/interactive/repository/dao"
 	"github.com/daidai53/webook/internal/domain"
 	"github.com/daidai53/webook/internal/integration/startup"
 	"github.com/daidai53/webook/internal/repository/dao"
@@ -31,7 +32,7 @@ func (a *ArticleHandlerSuite) TearDownTest() {
 
 func (a *ArticleHandlerSuite) SetupSuite() {
 	a.db = startup.InitDB()
-	hdl := startup.InitArticleHandler(dao.NewArticleGormDAO(a.db), dao.NewGORMInteractiveDAO(a.db),
+	hdl := startup.InitArticleHandler(dao.NewArticleGormDAO(a.db), dao2.NewGORMInteractiveDAO(a.db),
 		dao.NewUserDAO(a.db))
 	server := gin.Default()
 	server.Use(func(ctx *gin.Context) {

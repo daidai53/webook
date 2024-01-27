@@ -1,15 +1,17 @@
 // Copyright@daidai53 2024
-package article
+package events
 
 import (
 	"context"
 	"github.com/IBM/sarama"
-	"github.com/daidai53/webook/internal/repository"
+	"github.com/daidai53/webook/interactive/repository"
 	"github.com/daidai53/webook/pkg/logger"
 	"github.com/daidai53/webook/pkg/saramax"
 	"github.com/prometheus/client_golang/prometheus"
 	"time"
 )
+
+const TopicReadEvent = "article_read"
 
 type InteractiveReadEventConsumer struct {
 	repo   repository.InteractiveRepository
@@ -84,4 +86,9 @@ func (i *InteractiveReadEventConsumer) Consume(msg *sarama.ConsumerMessage, even
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	return i.repo.IncrReadCnt(ctx, "article", event.Aid)
+}
+
+type ReadEvent struct {
+	Aid int64
+	Uid int64
 }

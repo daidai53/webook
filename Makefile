@@ -25,3 +25,7 @@ mock:
 	@mockgen -package=smsmocks -source=./internal/service/sms/types.go -destination=./internal/service/sms/mocks/sms.mock.go
 	@mockgen -package=limitermocks -source=./pkg/limiter/types.go -destination=./pkg/limiter/mocks/limiter.mock.go
 	@go mod tidy
+
+.PHONY: grpc
+grpc:
+	@buf generate api/proto

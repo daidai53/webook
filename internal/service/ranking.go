@@ -4,6 +4,7 @@ package service
 import (
 	"context"
 	"errors"
+	interv1 "github.com/daidai53/webook/api/proto/gen/inter/v1"
 	"github.com/daidai53/webook/internal/domain"
 	"github.com/daidai53/webook/internal/repository"
 	"github.com/ecodeclub/ekit/queue"
@@ -19,7 +20,7 @@ type RankingService interface {
 }
 
 type BatchRankingService struct {
-	interSvc InteractiveService
+	interSvc interv1.InteractiveServiceClient
 
 	artSvc ArticleService
 
@@ -29,8 +30,23 @@ type BatchRankingService struct {
 	repo      repository.RankingRepository
 }
 
-func NewBatchRankingService(interSvc InteractiveService, artSvc ArticleService,
+func NewBatchRankingService(interSvc interv1.InteractiveServiceClient, artSvc ArticleService,
 	rankRep repository.RankingRepository) RankingService {
+	return &BatchRankingService{
+		interSvc:  interSvc,
+		artSvc:    artSvc,
+		batchSize: 100,
+		n:         100,
+		scoreFunc: func(likeCnt int64, utime time.Time) float64 {
+			dura := time.Since(utime).Seconds()
+			return float64(likeCnt-1) / math.Pow(dura+2, 1.5)
+		},
+		repo: rankRep,
+	}
+}
+
+func NewBatchRankingService1(interSvc interv1.InteractiveServiceClient, artSvc ArticleService,
+	rankRep repository.RankingRepository) *BatchRankingService {
 	return &BatchRankingService{
 		interSvc:  interSvc,
 		artSvc:    artSvc,
@@ -87,10 +103,14 @@ func (b *BatchRankingService) topN(ctx context.Context) ([]domain.Article, error
 		if len(arts) == 0 {
 			break
 		}
-		interMap, err := b.interSvc.GetByIds(ctx, "article", ids)
+		interResp, err := b.interSvc.GetByIds(ctx, &interv1.GetByIdsRequest{
+			Biz: "article",
+			Ids: ids,
+		})
 		if err != nil {
 			return nil, err
 		}
+		interMap := interResp.GetInters()
 		for _, art := range arts {
 			inter := interMap[art.Id]
 			score := b.scoreFunc(inter.LikeCnt, art.UTime)

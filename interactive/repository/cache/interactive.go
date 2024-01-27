@@ -4,12 +4,15 @@ package cache
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
-	"github.com/daidai53/webook/internal/domain"
+	"github.com/daidai53/webook/interactive/domain"
 	"github.com/redis/go-redis/v9"
 	"strconv"
 	"time"
 )
+
+var ErrKeyNotFound = errors.New("没有记录")
 
 var (
 	//go:embed lua/incr_cnt.lua
@@ -62,6 +65,7 @@ func (i *InteractiveRedisCache) Get(ctx context.Context, biz string, bizId int64
 		return domain.Interactive{}, ErrKeyNotFound
 	}
 	var intr domain.Interactive
+	intr.BizId = bizId
 	intr.ReadCnt, _ = strconv.ParseInt(res[fieldReadCnt], 10, 64)
 	intr.LikeCnt, _ = strconv.ParseInt(res[fieldLikeCnt], 10, 64)
 	intr.CollectCnt, _ = strconv.ParseInt(res[fieldCollectCnt], 10, 64)

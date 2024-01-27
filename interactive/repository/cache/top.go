@@ -7,7 +7,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"github.com/daidai53/webook/internal/repository/dao"
+	"github.com/daidai53/webook/interactive/repository/dao"
 	"github.com/daidai53/webook/pkg/logger"
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/redis/go-redis/v9"
@@ -68,7 +68,7 @@ func (t *topLikesCache) Init(ctx context.Context, likes []dao.Likes) {
 	for i := 1; i <= 10; i++ {
 		tmp, err := t.topLikesHeap(i)
 		if err != nil {
-			t.l.Error("从堆中获取top结果失败", logger.Error(err))
+			t.l.Debug("从堆中获取top结果失败", logger.Error(err))
 			continue
 		}
 		t.top10.update(i, tmp)

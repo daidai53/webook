@@ -40,17 +40,18 @@ func NewRankingJob(svc service.RankingService, timeout time.Duration, l logger.L
 		high:      80,
 	}
 
-	go func() {
-		ticker := time.NewTicker(time.Minute)
-		for {
-			select {
-			case <-ticker.C:
-				rand.Seed(uint64(time.Now().Unix()))
-				newLoad := rand.Int31n(101)
-				atomic.StoreInt32(&res.load, newLoad)
-			}
-		}
-	}()
+	atomic.StoreInt32(&res.load, 0)
+	//go func() {
+	//	ticker := time.NewTicker(time.Minute)
+	//	for {
+	//		select {
+	//		case <-ticker.C:
+	//			rand.Seed(uint64(time.Now().Unix()))
+	//			newLoad := rand.Int31n(101)
+	//			atomic.StoreInt32(&res.load, newLoad)
+	//		}
+	//	}
+	//}()
 	return res
 }
 

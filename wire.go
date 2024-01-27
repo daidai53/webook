@@ -4,6 +4,11 @@
 package main
 
 import (
+	"github.com/daidai53/webook/interactive/events"
+	repository2 "github.com/daidai53/webook/interactive/repository"
+	cache2 "github.com/daidai53/webook/interactive/repository/cache"
+	dao2 "github.com/daidai53/webook/interactive/repository/dao"
+	service2 "github.com/daidai53/webook/interactive/service"
 	"github.com/daidai53/webook/internal/events/article"
 	"github.com/daidai53/webook/internal/repository"
 	"github.com/daidai53/webook/internal/repository/cache"
@@ -16,10 +21,10 @@ import (
 )
 
 var interactiveSvcSet = wire.NewSet(
-	dao.NewGORMInteractiveDAO,
-	repository.NewCachedInteractiveRepository,
-	cache.NewInteractiveRedisCache,
-	service.NewInteractiveService,
+	dao2.NewGORMInteractiveDAO,
+	repository2.NewCachedInteractiveRepository,
+	cache2.NewInteractiveRedisCache,
+	service2.NewInteractiveService,
 )
 
 var rankingSvcSet = wire.NewSet(
@@ -45,9 +50,10 @@ func InitWebServer() *App {
 		ioc.InitRlockClient,
 		ioc.InitJobs,
 		ioc.InitRankingJob,
+		ioc.InitInterClient,
 
 		article.NewSaramaSyncProducer,
-		article.NewInteractiveReadEventConsumer,
+		events.NewInteractiveReadEventConsumer,
 		ioc.InitConsumers,
 
 		// cache部分
@@ -55,7 +61,7 @@ func InitWebServer() *App {
 		//cache.NewLocalCodeCache,
 		cache.NewUserCache,
 		cache.NewArticleRedisCache,
-		cache.NewTopLikesCache,
+		cache2.NewTopLikesCache,
 
 		// repository部分
 		repository.NewCachedCodeRepository,
@@ -68,7 +74,6 @@ func InitWebServer() *App {
 		service.NewUserService,
 		service.NewCodeService,
 		service.NewArticleService,
-		service.NewTopArticlesService,
 
 		// handler部分
 		web.NewUserHandler,

@@ -3,7 +3,12 @@ package service
 
 import (
 	"context"
+	interv1 "github.com/daidai53/webook/api/proto/gen/inter/v1"
+	svcmocks2 "github.com/daidai53/webook/api/proto/gen/inter/v1/mocks"
+	domain2 "github.com/daidai53/webook/interactive/domain"
 	"github.com/daidai53/webook/internal/domain"
+	"github.com/daidai53/webook/internal/repository"
+	repomocks "github.com/daidai53/webook/internal/repository/mocks"
 	svcmocks "github.com/daidai53/webook/internal/service/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -17,16 +22,17 @@ func TestBatchRankingService_TopN(t *testing.T) {
 	testCases := []struct {
 		name string
 
-		mock func(ctrl *gomock.Controller) (InteractiveService, ArticleService)
+		mock func(ctrl *gomock.Controller) (interv1.InteractiveServiceClient, ArticleService, repository.RankingRepository)
 
 		wantErr  error
 		wantArts []domain.Article
 	}{
 		{
 			name: "成功获取",
-			mock: func(ctrl *gomock.Controller) (InteractiveService, ArticleService) {
-				interSvc := svcmocks.NewMockInteractiveService(ctrl)
+			mock: func(ctrl *gomock.Controller) (interv1.InteractiveServiceClient, ArticleService, repository.RankingRepository) {
+				interSvc := svcmocks2.NewMockInteractiveServiceClient(ctrl)
 				artSvc := svcmocks.NewMockArticleService(ctrl)
+				repo := repomocks.NewMockRankingRepository(ctrl)
 				// 批量获取数据
 				artSvc.EXPECT().ListPub(gomock.Any(), gomock.Any(), 0, 2).
 					Return([]domain.Article{
@@ -42,17 +48,17 @@ func TestBatchRankingService_TopN(t *testing.T) {
 					Return([]domain.Article{}, nil)
 
 				interSvc.EXPECT().GetByIds(gomock.Any(), "article", []int64{1, 2}).
-					Return(map[int64]domain.Interactive{
+					Return(map[int64]domain2.Interactive{
 						1: {LikeCnt: 1},
 						2: {LikeCnt: 2},
 					}, nil)
 				interSvc.EXPECT().GetByIds(gomock.Any(), "article", []int64{3, 4}).
-					Return(map[int64]domain.Interactive{
+					Return(map[int64]domain2.Interactive{
 						3: {LikeCnt: 3},
 						4: {LikeCnt: 4},
 					}, nil)
 
-				return interSvc, artSvc
+				return interSvc, artSvc, repo
 			},
 
 			wantErr: nil,
@@ -68,8 +74,8 @@ func TestBatchRankingService_TopN(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			interSvc, artSvc := tc.mock(ctrl)
-			svc := NewBatchRankingService(interSvc, artSvc)
+			interSvc, artSvc, repo := tc.mock(ctrl)
+			svc := NewBatchRankingService1(interSvc, artSvc, repo)
 			svc.batchSize = batchSize
 			svc.scoreFunc = func(likeCnt int64, utime time.Time) float64 {
 				return float64(likeCnt)

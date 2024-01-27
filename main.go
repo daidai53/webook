@@ -5,6 +5,7 @@ import (
 	"context"
 	"github.com/daidai53/webook/ioc"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	_ "github.com/spf13/viper/remote"
 	"log"
@@ -13,7 +14,7 @@ import (
 )
 
 func main() {
-	initViper()
+	initViperWatch()
 	initPrometheus()
 	tpCancel := ioc.InitOTEL()
 	defer func() {
@@ -41,6 +42,22 @@ func initViper() {
 	viper.SetConfigType("yaml")
 	// 当前工作目录的 config 子目录
 	viper.AddConfigPath("config")
+	// 读取配置
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(err)
+	}
+	val := viper.Get("test.key")
+	log.Println(val)
+}
+
+func initViperWatch() {
+	cfile := pflag.String("config",
+		"config/dev.yaml", "webook")
+	pflag.Parse()
+	viper.SetConfigType("yaml")
+	viper.SetConfigFile(*cfile)
+	viper.WatchConfig()
 	// 读取配置
 	err := viper.ReadInConfig()
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	service2 "github.com/daidai53/webook/interactive/service"
 	"github.com/daidai53/webook/internal/domain"
 	"github.com/daidai53/webook/internal/service"
 	svcmocks "github.com/daidai53/webook/internal/service/mocks"
@@ -22,8 +23,8 @@ func TestArticleHandler_Publish(t *testing.T) {
 	testCases := []struct {
 		name      string
 		mockArti  func(ctrl *gomock.Controller) service.ArticleService
-		mockInter func(ctrl *gomock.Controller) service.InteractiveService
-		mockTop   func(ctrl *gomock.Controller) service.TopArticlesService
+		mockInter func(ctrl *gomock.Controller) service2.InteractiveService
+		mockRank  func(ctrl *gomock.Controller) service.RankingService
 		reqBody   string
 
 		wantCode int
@@ -125,8 +126,8 @@ func TestArticleHandler_Publish(t *testing.T) {
 
 			articleSvc := tc.mockArti(ctrl)
 			interSvc := tc.mockInter(ctrl)
-			topSvc := tc.mockTop(ctrl)
-			hdl := NewArticleHandler(logger.NewNopLogger(), articleSvc, interSvc, topSvc)
+			rankSvc := tc.mockRank(ctrl)
+			hdl := NewArticleHandler(logger.NewNopLogger(), articleSvc, interSvc, rankSvc)
 
 			server := gin.Default()
 			server.Use(func(ctx *gin.Context) {
