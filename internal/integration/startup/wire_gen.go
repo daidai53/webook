@@ -97,6 +97,15 @@ func InitJobScheduler() *job.Scheduler {
 	return scheduler
 }
 
+func InitCodeService() *service.CodeServiceImpl {
+	cmdable := InitRedis()
+	codeCache := cache.NewRedisCodeCache(cmdable)
+	codeRepository := repository.NewCachedCodeRepository(codeCache)
+	smsService := ioc.InitSmsService()
+	codeServiceImpl := service.NewCodeServiceImpl(codeRepository, smsService)
+	return codeServiceImpl
+}
+
 // wire.go:
 
 var thirdPartySet = wire.NewSet(

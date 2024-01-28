@@ -17,19 +17,26 @@ type CodeService interface {
 	Verify(ctx context.Context, biz, phone, code string) (bool, error)
 }
 
-type codeService struct {
+type CodeServiceImpl struct {
 	repo repository.CodeRepository
 	sms  sms.Service
 }
 
 func NewCodeService(c repository.CodeRepository, sms sms.Service) CodeService {
-	return &codeService{
+	return &CodeServiceImpl{
 		repo: c,
 		sms:  sms,
 	}
 }
 
-func (c *codeService) Send(ctx context.Context, biz, phone string) error {
+func NewCodeServiceImpl(c repository.CodeRepository, sms sms.Service) *CodeServiceImpl {
+	return &CodeServiceImpl{
+		repo: c,
+		sms:  sms,
+	}
+}
+
+func (c *CodeServiceImpl) Send(ctx context.Context, biz, phone string) error {
 	code := c.generateCode()
 	err := c.repo.Set(ctx, biz, phone, code)
 	if err != nil {
@@ -39,15 +46,15 @@ func (c *codeService) Send(ctx context.Context, biz, phone string) error {
 	return c.sms.Send(ctx, codeTplId, []string{code}, phone)
 }
 
-func (c *codeService) Verify(ctx context.Context, biz, phone, code string) (bool, error) {
+func (c *CodeServiceImpl) Verify(ctx context.Context, biz, phone, code string) (bool, error) {
 	verify, err := c.repo.Verify(ctx, biz, phone, code)
-	if errors.Is(err, repository.ErrCodeSendTooMany) {
+	if errors.Is(err, repository.ErrCodeVerifyTooMany) {
 		return false, nil
 	}
 	return verify, err
 }
 
-func (c *codeService) generateCode() string {
+func (c *CodeServiceImpl) generateCode() string {
 	code := rand.Intn(1000000)
 	return fmt.Sprintf("%06d", code)
 }

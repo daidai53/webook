@@ -117,3 +117,14 @@ func InitJobScheduler() *job.Scheduler {
 	wire.Build(jobProviderSet, thirdPartySet, job.NewScheduler)
 	return &job.Scheduler{}
 }
+
+func InitCodeService() *service.CodeServiceImpl {
+	wire.Build(
+		InitRedis,
+		ioc.InitSmsService,
+		cache.NewRedisCodeCache,
+		repository.NewCachedCodeRepository,
+		service.NewCodeServiceImpl,
+	)
+	return new(service.CodeServiceImpl)
+}
