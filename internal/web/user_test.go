@@ -4,6 +4,7 @@ package web
 import (
 	"bytes"
 	"errors"
+	service2 "github.com/daidai53/webook/code/service"
 	"github.com/daidai53/webook/internal/domain"
 	"github.com/daidai53/webook/internal/service"
 	svcmocks "github.com/daidai53/webook/internal/service/mocks"
@@ -18,7 +19,7 @@ import (
 func TestUserHandler_SignUp(t *testing.T) {
 	testCases := []struct {
 		name string
-		mock func(ctrl *gomock.Controller) (service.UserService, service.CodeService)
+		mock func(ctrl *gomock.Controller) (service.UserService, service2.CodeService)
 
 		// 构造请求，预期中的输入
 		reqBuilder func(t *testing.T) *http.Request
@@ -29,7 +30,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 	}{
 		{
 			name: "注册成功",
-			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
+			mock: func(ctrl *gomock.Controller) (service.UserService, service2.CodeService) {
 				userSvc := svcmocks.NewMockUserService(ctrl)
 				userSvc.EXPECT().SignUp(gomock.Any(), domain.User{
 					Email:    "123@qq.com",
@@ -53,7 +54,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 		},
 		{
 			name: "Bind出错",
-			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
+			mock: func(ctrl *gomock.Controller) (service.UserService, service2.CodeService) {
 				return nil, nil
 			},
 			reqBuilder: func(t *testing.T) *http.Request {
@@ -70,7 +71,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 		},
 		{
 			name: "邮箱格式不对",
-			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
+			mock: func(ctrl *gomock.Controller) (service.UserService, service2.CodeService) {
 				userSvc := svcmocks.NewMockUserService(ctrl)
 				return userSvc, nil
 			},
@@ -90,7 +91,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 		},
 		{
 			name: "两次密码输入不同",
-			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
+			mock: func(ctrl *gomock.Controller) (service.UserService, service2.CodeService) {
 				userSvc := svcmocks.NewMockUserService(ctrl)
 				return userSvc, nil
 			},
@@ -110,7 +111,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 		},
 		{
 			name: "密码格式不对",
-			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
+			mock: func(ctrl *gomock.Controller) (service.UserService, service2.CodeService) {
 				userSvc := svcmocks.NewMockUserService(ctrl)
 				return userSvc, nil
 			},
@@ -130,7 +131,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 		},
 		{
 			name: "系统错误",
-			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
+			mock: func(ctrl *gomock.Controller) (service.UserService, service2.CodeService) {
 				userSvc := svcmocks.NewMockUserService(ctrl)
 				userSvc.EXPECT().SignUp(gomock.Any(), domain.User{
 					Email:    "123@qq.com",
@@ -154,7 +155,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 		},
 		{
 			name: "邮箱冲突",
-			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
+			mock: func(ctrl *gomock.Controller) (service.UserService, service2.CodeService) {
 				userSvc := svcmocks.NewMockUserService(ctrl)
 				userSvc.EXPECT().SignUp(gomock.Any(), domain.User{
 					Email:    "123@qq.com",

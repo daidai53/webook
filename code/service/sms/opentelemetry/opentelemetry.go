@@ -3,7 +3,7 @@ package opentelemetry
 
 import (
 	"context"
-	"github.com/daidai53/webook/internal/service/sms"
+	"github.com/daidai53/webook/code/service/sms"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"

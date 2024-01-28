@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package code.v1;
+option go_package = "github.com/daidai53/webook/code/v1;codev1";
+
+service CodeService  {
+  rpc Send(SendRequest) returns (SendResponse);
+  rpc Verify(VerifyRequest) returns (VerifyResponse);
+}
+
+message SendRequest{
+  string biz = 1;
+  string phone = 2;
+}
+message SendResponse{
+
+}
+
+message VerifyRequest{
+  string biz = 1;
+  string phone = 2;
+  string code = 3;
+}
+
+message VerifyResponse{
+  bool verified = 1;
+}

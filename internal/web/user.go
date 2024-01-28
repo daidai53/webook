@@ -4,6 +4,8 @@ package web
 import (
 	"errors"
 	"fmt"
+	codev1 "github.com/daidai53/webook/api/proto/gen/code/v1"
+	service2 "github.com/daidai53/webook/code/service"
 	"github.com/daidai53/webook/internal/domain"
 	"github.com/daidai53/webook/internal/errs"
 	"github.com/daidai53/webook/internal/service"
@@ -30,10 +32,10 @@ type UserHandler struct {
 	passwordRegExp *regexp.Regexp
 	birthdayRegExp *regexp.Regexp
 	svc            service.UserService
-	codeSvc        service.CodeService
+	codeSvc        codev1.CodeServiceClient
 }
 
-func NewUserHandler(svc service.UserService, codeSvc service.CodeService, hdl ijwt.Handler) *UserHandler {
+func NewUserHandler(svc service.UserService, codeSvc codev1.CodeServiceClient, hdl ijwt.Handler) *UserHandler {
 	return &UserHandler{
 		emailRegExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordRegExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
@@ -65,13 +67,16 @@ func (u *UserHandler) SendSMSLoginCode(ctx *gin.Context, req SendSMSCodeReq) (gi
 			Msg:  "请输入手机号",
 		}, nil
 	}
-	err := u.codeSvc.Send(ctx.Request.Context(), bizLogin, req.Phone)
+	_, err := u.codeSvc.Send(ctx.Request.Context(), &codev1.SendRequest{
+		Biz:   bizLogin,
+		Phone: req.Phone,
+	})
 	switch {
 	case err == nil:
 		return ginx.Result{
 			Msg: "发送成功",
 		}, nil
-	case errors.Is(err, service.ErrCodeSendTooMany):
+	case errors.Is(err, service2.ErrCodeSendTooMany):
 		return ginx.Result{
 			Code: 4,
 			Msg:  "短信发送太频繁，请稍后再试",
@@ -85,14 +90,18 @@ func (u *UserHandler) SendSMSLoginCode(ctx *gin.Context, req SendSMSCodeReq) (gi
 }
 
 func (u *UserHandler) LoginSMS(context *gin.Context, req LoginSMSReq) (ginx.Result, error) {
-	ok, err := u.codeSvc.Verify(context, bizLogin, req.Phone, req.Code)
+	resp, err := u.codeSvc.Verify(context, &codev1.VerifyRequest{
+		Biz:   bizLogin,
+		Phone: req.Phone,
+		Code:  req.Code,
+	})
 	if err != nil {
 		return ginx.Result{
 			Code: 5,
 			Msg:  "系统错误",
 		}, err
 	}
-	if !ok {
+	if !resp.Verified {
 		return ginx.Result{
 			Code: 4,
 			Msg:  "验证码不对，请重新输入",

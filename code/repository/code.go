@@ -3,7 +3,7 @@ package repository
 
 import (
 	"context"
-	"github.com/daidai53/webook/internal/repository/cache"
+	"github.com/daidai53/webook/code/repository/cache"
 )
 
 var (

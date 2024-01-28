@@ -4,6 +4,9 @@
 package startup
 
 import (
+	repository3 "github.com/daidai53/webook/code/repository"
+	cache3 "github.com/daidai53/webook/code/repository/cache"
+	service3 "github.com/daidai53/webook/code/service"
 	repository2 "github.com/daidai53/webook/interactive/repository"
 	cache2 "github.com/daidai53/webook/interactive/repository/cache"
 	dao2 "github.com/daidai53/webook/interactive/repository/dao"
@@ -56,7 +59,7 @@ func InitWebServer() *gin.Engine {
 		//ioc.NewLocalCacheDefault,
 
 		// cache部分
-		cache.NewRedisCodeCache,
+		cache3.NewRedisCodeCache,
 		//cache.NewLocalCodeCache,
 		cache.NewArticleRedisCache,
 		cache2.NewInteractiveRedisCache,
@@ -65,7 +68,7 @@ func InitWebServer() *gin.Engine {
 		cache.NewRankingRedisCache,
 
 		// repository部分
-		repository.NewCachedCodeRepository,
+		repository3.NewCachedCodeRepository,
 		repository.NewCachedUserRepository,
 		repository.NewCachedArticleRepository,
 		repository2.NewCachedInteractiveRepository,
@@ -76,7 +79,7 @@ func InitWebServer() *gin.Engine {
 		// service部分
 		ioc.InitSmsService,
 		service.NewUserService,
-		service.NewCodeService,
+		service3.NewCodeService,
 		service.NewArticleService,
 		service2.NewInteractiveService,
 		service.NewBatchRankingService,

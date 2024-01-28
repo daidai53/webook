@@ -4,6 +4,9 @@
 package main
 
 import (
+	repository3 "github.com/daidai53/webook/code/repository"
+	cache3 "github.com/daidai53/webook/code/repository/cache"
+	service3 "github.com/daidai53/webook/code/service"
 	"github.com/daidai53/webook/interactive/events"
 	repository2 "github.com/daidai53/webook/interactive/repository"
 	cache2 "github.com/daidai53/webook/interactive/repository/cache"
@@ -51,20 +54,21 @@ func InitWebServer() *App {
 		ioc.InitJobs,
 		ioc.InitRankingJob,
 		ioc.InitInterClient,
+		ioc.InitCodeClient,
 
 		article.NewSaramaSyncProducer,
 		events.NewInteractiveReadEventConsumer,
 		ioc.InitConsumers,
 
 		// cache部分
-		cache.NewRedisCodeCache,
+		cache3.NewRedisCodeCache,
 		//cache.NewLocalCodeCache,
 		cache.NewUserCache,
 		cache.NewArticleRedisCache,
 		cache2.NewTopLikesCache,
 
 		// repository部分
-		repository.NewCachedCodeRepository,
+		repository3.NewCachedCodeRepository,
 		repository.NewCachedUserRepository,
 		repository.NewCachedArticleRepository,
 
@@ -72,7 +76,7 @@ func InitWebServer() *App {
 		ioc.InitSmsService,
 		ioc.InitWechatService,
 		service.NewUserService,
-		service.NewCodeService,
+		service3.NewCodeService,
 		service.NewArticleService,
 
 		// handler部分
