@@ -1,5 +1,5 @@
 test:
-  key: interactive
+  key: code
 redis:
   Addr: "localhost:6379"
 kafka:
@@ -7,4 +7,4 @@ kafka:
     - "localhost:9094"
 grpc:
   server:
-    addr: ":8090"
+    addr: ":8091"

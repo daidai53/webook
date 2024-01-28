@@ -7,11 +7,14 @@
 package main
 
 import (
+	repository2 "github.com/daidai53/webook/code/repository"
+	cache2 "github.com/daidai53/webook/code/repository/cache"
+	service2 "github.com/daidai53/webook/code/service"
 	"github.com/daidai53/webook/interactive/events"
-	repository2 "github.com/daidai53/webook/interactive/repository"
-	cache2 "github.com/daidai53/webook/interactive/repository/cache"
+	repository3 "github.com/daidai53/webook/interactive/repository"
+	cache3 "github.com/daidai53/webook/interactive/repository/cache"
 	dao2 "github.com/daidai53/webook/interactive/repository/dao"
-	service2 "github.com/daidai53/webook/interactive/service"
+	service3 "github.com/daidai53/webook/interactive/service"
 	"github.com/daidai53/webook/internal/events/article"
 	"github.com/daidai53/webook/internal/repository"
 	"github.com/daidai53/webook/internal/repository/cache"
@@ -39,11 +42,12 @@ func InitWebServer() *App {
 	userCache := cache.NewUserCache(cmdable)
 	userRepository := repository.NewCachedUserRepository(userDAO, userCache)
 	userService := service.NewUserService(userRepository)
-	codeCache := cache.NewRedisCodeCache(cmdable)
-	codeRepository := repository.NewCachedCodeRepository(codeCache)
+	codeCache := cache2.NewRedisCodeCache(cmdable)
+	codeRepository := repository2.NewCachedCodeRepository(codeCache)
 	smsService := ioc.InitSmsService()
-	codeService := service.NewCodeService(codeRepository, smsService)
-	userHandler := web.NewUserHandler(userService, codeService, handler)
+	codeService := service2.NewCodeService(codeRepository, smsService)
+	codeServiceClient := ioc.InitCodeClient(codeService)
+	userHandler := web.NewUserHandler(userService, codeServiceClient, handler)
 	articleDAO := dao.NewArticleGormDAO(db)
 	articleCache := cache.NewArticleRedisCache(cmdable)
 	articleRepository := repository.NewCachedArticleRepository(articleDAO, articleCache, userRepository)
@@ -52,10 +56,10 @@ func InitWebServer() *App {
 	producer := article.NewSaramaSyncProducer(syncProducer)
 	articleService := service.NewArticleService(articleRepository, producer)
 	interactiveDAO := dao2.NewGORMInteractiveDAO(db)
-	interactiveCache := cache2.NewInteractiveRedisCache(cmdable)
-	topLikesArticleCache := cache2.NewTopLikesCache(cmdable, loggerV1)
-	interactiveRepository := repository2.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, topLikesArticleCache, loggerV1)
-	interactiveService := service2.NewInteractiveService(interactiveRepository)
+	interactiveCache := cache3.NewInteractiveRedisCache(cmdable)
+	topLikesArticleCache := cache3.NewTopLikesCache(cmdable, loggerV1)
+	interactiveRepository := repository3.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, topLikesArticleCache, loggerV1)
+	interactiveService := service3.NewInteractiveService(interactiveRepository)
 	interactiveServiceClient := ioc.InitInterClient(interactiveService)
 	rankingCache := cache.NewRankingRedisCache(cmdable)
 	rankingRepository := repository.NewCachedRankingRepository(rankingCache)
@@ -79,6 +83,6 @@ func InitWebServer() *App {
 
 // wire.go:
 
-var interactiveSvcSet = wire.NewSet(dao2.NewGORMInteractiveDAO, repository2.NewCachedInteractiveRepository, cache2.NewInteractiveRedisCache, service2.NewInteractiveService)
+var interactiveSvcSet = wire.NewSet(dao2.NewGORMInteractiveDAO, repository3.NewCachedInteractiveRepository, cache3.NewInteractiveRedisCache, service3.NewInteractiveService)
 
 var rankingSvcSet = wire.NewSet(cache.NewRankingRedisCache, repository.NewCachedRankingRepository, service.NewBatchRankingService)

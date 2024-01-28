@@ -7,6 +7,9 @@
 package startup
 
 import (
+	repository3 "github.com/daidai53/webook/code/repository"
+	cache3 "github.com/daidai53/webook/code/repository/cache"
+	service3 "github.com/daidai53/webook/code/service"
 	repository2 "github.com/daidai53/webook/interactive/repository"
 	cache2 "github.com/daidai53/webook/interactive/repository/cache"
 	dao2 "github.com/daidai53/webook/interactive/repository/dao"
@@ -36,10 +39,10 @@ func InitWebServer() *gin.Engine {
 	userCache := cache.NewUserCache(cmdable)
 	userRepository := repository.NewCachedUserRepository(userDAO, userCache)
 	userService := service.NewUserService(userRepository)
-	codeCache := cache.NewRedisCodeCache(cmdable)
-	codeRepository := repository.NewCachedCodeRepository(codeCache)
+	codeCache := cache3.NewRedisCodeCache(cmdable)
+	codeRepository := repository3.NewCachedCodeRepository(codeCache)
 	smsService := ioc.InitSmsService()
-	codeService := service.NewCodeService(codeRepository, smsService)
+	codeService := service3.NewCodeService(codeRepository, smsService)
 	userHandler := web.NewUserHandler(userService, codeService, handler)
 	articleDAO := dao.NewArticleGormDAO(db)
 	articleCache := cache.NewArticleRedisCache(cmdable)
@@ -97,12 +100,12 @@ func InitJobScheduler() *job.Scheduler {
 	return scheduler
 }
 
-func InitCodeService() *service.CodeServiceImpl {
+func InitCodeService() *service3.CodeServiceImpl {
 	cmdable := InitRedis()
-	codeCache := cache.NewRedisCodeCache(cmdable)
-	codeRepository := repository.NewCachedCodeRepository(codeCache)
+	codeCache := cache3.NewRedisCodeCache(cmdable)
+	codeRepository := repository3.NewCachedCodeRepository(codeCache)
 	smsService := ioc.InitSmsService()
-	codeServiceImpl := service.NewCodeServiceImpl(codeRepository, smsService)
+	codeServiceImpl := service3.NewCodeServiceImpl(codeRepository, smsService)
 	return codeServiceImpl
 }
 

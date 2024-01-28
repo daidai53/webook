@@ -5,8 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/daidai53/webook/internal/repository"
-	"github.com/daidai53/webook/internal/service/sms"
+	"github.com/daidai53/webook/code/repository"
+	"github.com/daidai53/webook/code/service/sms"
 	"math/rand"
 )
 

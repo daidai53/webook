@@ -3,8 +3,8 @@ package integration
 
 import (
 	"context"
+	"github.com/daidai53/webook/code/repository/cache"
 	"github.com/daidai53/webook/internal/integration/startup"
-	"github.com/daidai53/webook/internal/repository/cache"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
