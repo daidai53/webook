@@ -3,6 +3,7 @@ package dao
 
 import (
 	"context"
+	"github.com/daidai53/webook/pkg/migrator"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"time"
@@ -204,6 +205,18 @@ type Interactive struct {
 	CollectCnt int64
 	UTime      int64
 	CTime      int64
+}
+
+func (i Interactive) ID() int64 {
+	return i.Id
+}
+
+func (i Interactive) CompareTo(dst migrator.Entity) bool {
+	val, ok := dst.(Interactive)
+	if !ok {
+		return false
+	}
+	return i == val
 }
 
 type Likes struct {

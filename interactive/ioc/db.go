@@ -2,29 +2,60 @@
 package ioc
 
 import (
-	"github.com/daidai53/webook/config"
 	"github.com/daidai53/webook/interactive/repository/dao"
 	"github.com/daidai53/webook/pkg/gormx"
+	"github.com/daidai53/webook/pkg/gormx/connpool"
 	"github.com/daidai53/webook/pkg/logger"
 	prometheus2 "github.com/prometheus/client_golang/prometheus"
+	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/plugin/opentelemetry/tracing"
 	"gorm.io/plugin/prometheus"
 )
 
-func InitDB(l logger.LoggerV1) *gorm.DB {
-	db, err := gorm.Open(mysql.Open(config.Config.DB.DSN), &gorm.Config{
-		//Logger: glogger.New(gormLoggerFunc(l.Debug), glogger.Config{
-		//	SlowThreshold: 0,
-		//	LogLevel:      glogger.Info,
-		//}),
-	})
+type SrcDB *gorm.DB
+type DstDB *gorm.DB
+
+func InitSrcDB() SrcDB {
+	return initDB("src")
+}
+
+func InitDstDB() DstDB {
+	return initDB("dst")
+}
+
+func InitDoubleWritePool(src SrcDB, dst DstDB, l logger.LoggerV1) *connpool.DoubleWritePool {
+	return connpool.NewDoubleWritePool(src, dst, l)
+}
+
+func InitBizDB(p *connpool.DoubleWritePool) *gorm.DB {
+	doubleWrite, err := gorm.Open(mysql.New(mysql.Config{
+		Conn: p,
+	}))
+	if err != nil {
+		panic(err)
+	}
+	return doubleWrite
+}
+
+func initDB(key string) *gorm.DB {
+	type Config struct {
+		DSN string `yaml:"dsn"`
+	}
+	var cfg Config = Config{
+		DSN: "root:root@tcp(localhost:12345)/webook",
+	}
+	err := viper.UnmarshalKey("db."+key, &cfg)
+	if err != nil {
+		panic(err)
+	}
+	db, err := gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
 	err = db.Use(prometheus.New(prometheus.Config{
-		DBName:          "webook",
+		DBName:          "webook" + key,
 		RefreshInterval: 15,
 		MetricsCollector: []prometheus.MetricsCollector{
 			&prometheus.MySQL{
@@ -39,7 +70,7 @@ func InitDB(l logger.LoggerV1) *gorm.DB {
 	cb := gormx.NewCallbacks(prometheus2.SummaryOpts{
 		Namespace: "daidai53",
 		Subsystem: "webook",
-		Name:      "gorm_db",
+		Name:      "gorm_db_" + key,
 		ConstLabels: map[string]string{
 			"instance_id": "ins_1",
 		},
@@ -57,7 +88,7 @@ func InitDB(l logger.LoggerV1) *gorm.DB {
 		panic(err)
 	}
 
-	err = db.Use(tracing.NewPlugin(tracing.WithoutMetrics(), tracing.WithDBName("webook")))
+	err = db.Use(tracing.NewPlugin(tracing.WithoutMetrics(), tracing.WithDBName("webook_"+key)))
 	if err != nil {
 		panic(err)
 	}

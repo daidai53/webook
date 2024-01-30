@@ -27,6 +27,13 @@ type Validator[T migrator.Entity] struct {
 	fromBase func(ctx context.Context, offset int) (T, error)
 }
 
+func NewValidator[T migrator.Entity](base *gorm.DB,
+	target *gorm.DB, l logger.LoggerV1, producer events.Producer, direction string) *Validator[T] {
+	res := &Validator[T]{base: base, target: target, l: l, producer: producer, direction: direction, batchSize: 100}
+	res.fromBase = res.fullFromBase
+	return res
+}
+
 func (v *Validator[T]) Validate(ctx context.Context) error {
 	var eg errgroup.Group
 
@@ -87,12 +94,23 @@ func (v *Validator[T]) ValidateBaseToTarget(ctx context.Context) error {
 	}
 }
 
+func (v *Validator[T]) Utime(t int64) *Validator[T] {
+	v.utime = t
+	return v
+}
+
+func (v *Validator[T]) SleepInterval(in time.Duration) *Validator[T] {
+	v.sleepInterval = in
+	return v
+}
+
 func (v *Validator[T]) Full() {
 	v.fromBase = v.fullFromBase
 }
 
-func (v *Validator[T]) Incr() {
+func (v *Validator[T]) Incr() *Validator[T] {
 	v.fromBase = v.incrFromBase
+	return v
 }
 
 func (v *Validator[T]) fullFromBase(ctx context.Context, offset int) (T, error) {

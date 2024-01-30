@@ -19,6 +19,16 @@ func main() {
 	//	tpCancel(tpCtx)
 	//}()
 	app := InitApp()
+	for _, c := range app.consumers {
+		err := c.Start()
+		if err != nil {
+			panic(err)
+		}
+	}
+	go func() {
+		err1 := app.adminServer.Start()
+		panic(err1)
+	}()
 	app.server.Serve()
 }
 

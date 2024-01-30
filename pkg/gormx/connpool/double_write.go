@@ -33,6 +33,10 @@ func (d *DoubleWritePool) PrepareContext(ctx context.Context, query string) (*sq
 	panic("implement me")
 }
 
+func (d *DoubleWritePool) UpdatePattern(pattern string) {
+	d.pattern.Store(pattern)
+}
+
 func (d *DoubleWritePool) BeginTx(ctx context.Context, opts *sql.TxOptions) (gorm.ConnPool, error) {
 	pattern := d.pattern.Load()
 	switch pattern {

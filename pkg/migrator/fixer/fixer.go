@@ -15,7 +15,8 @@ type OverrideFixer[T migrator.Entity] struct {
 }
 
 func NewOverrideFixer[T migrator.Entity](base *gorm.DB, target *gorm.DB) (*OverrideFixer[T], error) {
-	rows, err := base.Order("id").Rows()
+	var t T
+	rows, err := base.Model(&t).Limit(1).Rows()
 	if err != nil {
 		return nil, err
 	}
