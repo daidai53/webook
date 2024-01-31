@@ -24,7 +24,7 @@ type Validator[T migrator.Entity] struct {
 	utime         int64
 	sleepInterval time.Duration
 
-	fromBase func(ctx context.Context, offset int) (T, error)
+	fromBase func(ctx context.Context, offset int, limit int) ([]T, error)
 }
 
 func NewValidator[T migrator.Entity](base *gorm.DB,
@@ -50,7 +50,7 @@ func (v *Validator[T]) Validate(ctx context.Context) error {
 func (v *Validator[T]) ValidateBaseToTarget(ctx context.Context) error {
 	offset := 0
 	for {
-		src, err := v.fromBase(ctx, offset)
+		srcs, err := v.fromBase(ctx, offset, v.batchSize)
 		if err == context.DeadlineExceeded || err == context.Canceled {
 			return nil
 		}
@@ -66,31 +66,33 @@ func (v *Validator[T]) ValidateBaseToTarget(ctx context.Context) error {
 			// 查询出错
 			v.l.Error("base -> target 查询base失败",
 				logger.Error(err))
-			offset++
+			offset += len(srcs)
 			continue
 		}
 
-		var dst T
-		err = v.target.WithContext(ctx).Where("id=?", src.ID()).First(&dst).Error
-		switch err {
-		case gorm.ErrRecordNotFound:
-			// target没有
-			// 要丢一条消息到kafka上
-			v.Notify(src.ID(), events.InconsistentEventTypeTargetMissing)
-		case nil:
-			equal := src.CompareTo(dst)
-			if !equal {
+		for _, src := range srcs {
+			var dst T
+			err = v.target.WithContext(ctx).Where("id=?", src.ID()).First(&dst).Error
+			switch err {
+			case gorm.ErrRecordNotFound:
+				// target没有
 				// 要丢一条消息到kafka上
-				v.Notify(src.ID(), events.InconsistentEventTypeNEQ)
+				v.Notify(src.ID(), events.InconsistentEventTypeTargetMissing)
+			case nil:
+				equal := src.CompareTo(dst)
+				if !equal {
+					// 要丢一条消息到kafka上
+					v.Notify(src.ID(), events.InconsistentEventTypeNEQ)
+				}
+			default:
+				// 记录日志，然后继续
+				// 做好监控
+				v.l.Error("base -> target 查询target失败",
+					logger.Error(err),
+					logger.Int64("id", src.ID()))
 			}
-		default:
-			// 记录日志，然后继续
-			// 做好监控
-			v.l.Error("base -> target 查询target失败",
-				logger.Error(err),
-				logger.Int64("id", src.ID()))
 		}
-		offset++
+		offset += len(srcs)
 	}
 }
 
@@ -113,21 +115,21 @@ func (v *Validator[T]) Incr() *Validator[T] {
 	return v
 }
 
-func (v *Validator[T]) fullFromBase(ctx context.Context, offset int) (T, error) {
+func (v *Validator[T]) fullFromBase(ctx context.Context, offset int, limit int) ([]T, error) {
 	dbCtx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
-	var src T
-	err := v.base.WithContext(dbCtx).Order("id").Offset(offset).First(&src).Error
+	var src []T
+	err := v.base.WithContext(dbCtx).Order("id").Offset(offset).Limit(limit).Find(&src).Error
 	return src, err
 }
 
-func (v *Validator[T]) incrFromBase(ctx context.Context, offset int) (T, error) {
+func (v *Validator[T]) incrFromBase(ctx context.Context, offset int, limit int) ([]T, error) {
 	dbCtx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
-	var src T
+	var src []T
 	err := v.base.WithContext(dbCtx).Order("u_time").
-		Where("u_time>?", v.utime).
-		Offset(offset).First(&src).Error
+		Where("u_time>?", v.utime).Limit(limit).
+		Offset(offset).Find(&src).Error
 	return src, err
 }
 
