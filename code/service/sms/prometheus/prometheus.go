@@ -3,7 +3,7 @@ package prometheus
 
 import (
 	"context"
-	"github.com/daidai53/webook/internal/service/sms"
+	"github.com/daidai53/webook/code/service/sms"
 	"github.com/prometheus/client_golang/prometheus"
 	"time"
 )

@@ -10,11 +10,6 @@ import (
 	repository2 "github.com/daidai53/webook/code/repository"
 	cache2 "github.com/daidai53/webook/code/repository/cache"
 	service2 "github.com/daidai53/webook/code/service"
-	"github.com/daidai53/webook/interactive/events"
-	repository3 "github.com/daidai53/webook/interactive/repository"
-	cache3 "github.com/daidai53/webook/interactive/repository/cache"
-	dao2 "github.com/daidai53/webook/interactive/repository/dao"
-	service3 "github.com/daidai53/webook/interactive/service"
 	"github.com/daidai53/webook/internal/events/article"
 	"github.com/daidai53/webook/internal/repository"
 	"github.com/daidai53/webook/internal/repository/cache"
@@ -55,12 +50,8 @@ func InitWebServer() *App {
 	syncProducer := ioc.InitSyncProducer(client)
 	producer := article.NewSaramaSyncProducer(syncProducer)
 	articleService := service.NewArticleService(articleRepository, producer)
-	interactiveDAO := dao2.NewGORMInteractiveDAO(db)
-	interactiveCache := cache3.NewInteractiveRedisCache(cmdable)
-	topLikesArticleCache := cache3.NewTopLikesCache(cmdable, loggerV1)
-	interactiveRepository := repository3.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, topLikesArticleCache, loggerV1)
-	interactiveService := service3.NewInteractiveService(interactiveRepository)
-	interactiveServiceClient := ioc.InitInterClient(interactiveService)
+	clientv3Client := ioc.InitEtcd()
+	interactiveServiceClient := ioc.InitInterClient(clientv3Client)
 	rankingCache := cache.NewRankingRedisCache(cmdable)
 	rankingRepository := repository.NewCachedRankingRepository(rankingCache)
 	rankingService := service.NewBatchRankingService(interactiveServiceClient, articleService, rankingRepository)
@@ -68,8 +59,7 @@ func InitWebServer() *App {
 	wechatService := ioc.InitWechatService(loggerV1)
 	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService, handler)
 	engine := ioc.InitWebServer(v, userHandler, articleHandler, oAuth2WechatHandler)
-	interactiveReadEventConsumer := events.NewInteractiveReadEventConsumer(interactiveRepository, client, loggerV1)
-	v2 := ioc.InitConsumers(interactiveReadEventConsumer)
+	v2 := ioc.InitConsumers()
 	rlockClient := ioc.InitRlockClient(cmdable)
 	rankingJob := ioc.InitRankingJob(rankingService, loggerV1, rlockClient)
 	cron := ioc.InitJobs(loggerV1, rankingJob)
@@ -82,7 +72,5 @@ func InitWebServer() *App {
 }
 
 // wire.go:
-
-var interactiveSvcSet = wire.NewSet(dao2.NewGORMInteractiveDAO, repository3.NewCachedInteractiveRepository, cache3.NewInteractiveRedisCache, service3.NewInteractiveService)
 
 var rankingSvcSet = wire.NewSet(cache.NewRankingRedisCache, repository.NewCachedRankingRepository, service.NewBatchRankingService)

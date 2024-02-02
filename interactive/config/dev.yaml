@@ -7,7 +7,9 @@ kafka:
     - "localhost:9092"
 grpc:
   server:
-    addr: ":8090"
+    etcdAddr: "localhost:12379"
+    port: 8090
+    name: "interactive"
 
 db:
   src:
