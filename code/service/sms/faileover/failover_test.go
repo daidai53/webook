@@ -4,8 +4,8 @@ package faileover
 import (
 	"context"
 	"errors"
-	"github.com/daidai53/webook/internal/service/sms"
-	smsmocks "github.com/daidai53/webook/internal/service/sms/mocks"
+	"github.com/daidai53/webook/code/service/sms"
+	smsmocks "github.com/daidai53/webook/code/service/sms/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"testing"

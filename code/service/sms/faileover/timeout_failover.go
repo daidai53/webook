@@ -3,7 +3,7 @@ package faileover
 
 import (
 	"context"
-	"github.com/daidai53/webook/internal/service/sms"
+	"github.com/daidai53/webook/code/service/sms"
 	"sync/atomic"
 )
 

@@ -4,9 +4,9 @@ package async
 import (
 	"context"
 	"errors"
+	"github.com/daidai53/webook/code/service/sms"
+	smsmocks "github.com/daidai53/webook/code/service/sms/mocks"
 	"github.com/daidai53/webook/internal/integration/startup"
-	"github.com/daidai53/webook/internal/service/sms"
-	smsmocks "github.com/daidai53/webook/internal/service/sms/mocks"
 	"github.com/daidai53/webook/pkg/limiter"
 	limitermocks "github.com/daidai53/webook/pkg/limiter/mocks"
 	"github.com/stretchr/testify/assert"
