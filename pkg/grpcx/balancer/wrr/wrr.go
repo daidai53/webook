@@ -68,9 +68,30 @@ func (p *Picker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 	return balancer.PickResult{
 		SubConn: maxCC.SubConn,
 		Done: func(info balancer.DoneInfo) {
-
+			p.adjustWeight(info, maxCC)
 		},
 	}, nil
+}
+
+func (p *Picker) adjustWeight(info balancer.DoneInfo, selected *weightConn) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	if info.Err == nil {
+		var total int
+		for _, c := range p.conns {
+			total += c.weight
+		}
+		selected.currentWeight += len(p.conns) * selected.weight
+		if selected.currentWeight > total {
+			selected.weight = total
+		}
+		return
+	}
+	selected.currentWeight -= len(p.conns) * selected.weight
+	if selected.currentWeight < 0 {
+		selected.currentWeight = 0
+	}
 }
 
 type weightConn struct {
