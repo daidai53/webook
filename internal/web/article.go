@@ -3,6 +3,7 @@ package web
 
 import (
 	interv1 "github.com/daidai53/webook/api/proto/gen/inter/v1"
+	rewardv1 "github.com/daidai53/webook/api/proto/gen/reward/v1"
 	"github.com/daidai53/webook/internal/domain"
 	"github.com/daidai53/webook/internal/service"
 	"github.com/daidai53/webook/internal/web/jwt"
@@ -21,15 +22,17 @@ type ArticleHandler struct {
 	interSvc interv1.InteractiveServiceClient
 	rankSvc  service.RankingService
 	l        logger.LoggerV1
+	reward   rewardv1.RewardServiceClient
 }
 
 func NewArticleHandler(l logger.LoggerV1, svc service.ArticleService, interSvc interv1.InteractiveServiceClient,
-	rank service.RankingService) *ArticleHandler {
+	rank service.RankingService, reward rewardv1.RewardServiceClient) *ArticleHandler {
 	return &ArticleHandler{
 		svc:      svc,
 		interSvc: interSvc,
 		rankSvc:  rank,
 		l:        l,
+		reward:   reward,
 	}
 }
 
@@ -49,6 +52,7 @@ func (h *ArticleHandler) RegisterRoutes(server *gin.Engine) {
 	pub.POST("/like", ginx.WrapBodyAndClaims(h.Like))
 	pub.POST("/collect", ginx.WrapBodyAndClaims(h.Collect))
 	pub.GET("/rank", h.RankArticle)
+	pub.POST("/reward", ginx.WrapBodyAndClaims[ArticleRewardRequest, jwt.UserClaim](h.Reward))
 }
 
 // Edit 接受 Article 输入，返回一个ID，文章的ID
@@ -326,7 +330,38 @@ func (h *ArticleHandler) RankArticle(ctx *gin.Context) {
 	})
 }
 
+func (h *ArticleHandler) Reward(ctx *gin.Context, req ArticleRewardRequest, uc jwt.UserClaim) (ginx.Result, error) {
+	artResp, err := h.svc.GetPubById(ctx, req.id, uc.Uid)
+	if err != nil {
+		return ginx.Result{Msg: "系统错误"}, err
+	}
+
+	resp, err := h.reward.PreReward(ctx, &rewardv1.PreRewardRequest{
+		Biz:       "article",
+		BizId:     artResp.Id,
+		BizName:   artResp.Title,
+		TargetUid: artResp.Author.Id,
+		Uid:       uc.Uid,
+		Amt:       req.Amt,
+	})
+	if err != nil {
+		return ginx.Result{Msg: "系统错误"}, err
+	}
+	return ginx.Result{
+		Data: map[string]any{
+			"codeURL": resp.CodeUrl,
+			"rid":     resp.Rid,
+		},
+	}, nil
+
+}
+
 type Page struct {
 	Limit  int
 	Offset int
+}
+
+type ArticleRewardRequest struct {
+	id  int64 `json:"id"`
+	Amt int64 `json:"amt"`
 }

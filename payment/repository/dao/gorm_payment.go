@@ -11,6 +11,12 @@ type GORMPaymentDAO struct {
 	db *gorm.DB
 }
 
+func (g *GORMPaymentDAO) GetPayment(ctx context.Context, bizTradeNo string) (Payment, error) {
+	var pmt Payment
+	err := g.db.WithContext(ctx).Where("biz_trade_no=?", bizTradeNo).First(&pmt).Error
+	return pmt, err
+}
+
 func (g *GORMPaymentDAO) FindExpiredPayment(ctx context.Context, offset, limit int, t time.Time) ([]Payment, error) {
 	var res []Payment
 	err := g.db.WithContext(ctx).Where("status=? AND u_time<?", domain.PaymentStatusInit, t.UnixMilli()).

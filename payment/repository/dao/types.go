@@ -11,6 +11,7 @@ type PaymentDAO interface {
 	Insert(ctx context.Context, pmt Payment) error
 	UpdateTxnIDAndStatus(ctx context.Context, tradeNo string, txnId string, status domain.PaymentStatus) error
 	FindExpiredPayment(ctx context.Context, offset, limit int, t time.Time) ([]Payment, error)
+	GetPayment(ctx context.Context, bizTradeNo string) (Payment, error)
 }
 
 type Payment struct {

@@ -12,6 +12,11 @@ type paymentRepository struct {
 	dao dao.PaymentDAO
 }
 
+func (p *paymentRepository) GetPayment(ctx context.Context, bizTradeId string) (domain.Payment, error) {
+	pmt, err := p.dao.GetPayment(ctx, bizTradeId)
+	return p.toDomain(&pmt), err
+}
+
 func (p *paymentRepository) FindExpiredPayment(ctx context.Context, offset, limit int, t time.Time) ([]domain.Payment, error) {
 	pmts, err := p.dao.FindExpiredPayment(ctx, offset, limit, t)
 	if err != nil {

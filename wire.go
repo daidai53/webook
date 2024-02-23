@@ -15,6 +15,7 @@ import (
 	"github.com/daidai53/webook/internal/web"
 	ijwt "github.com/daidai53/webook/internal/web/jwt"
 	"github.com/daidai53/webook/ioc"
+	"github.com/daidai53/webook/pkg/app"
 	"github.com/google/wire"
 )
 
@@ -24,7 +25,7 @@ var rankingSvcSet = wire.NewSet(
 	service.NewBatchRankingService,
 )
 
-func InitWebServer() *App {
+func InitWebServer() *app.App {
 	wire.Build(
 		// 第三方依赖
 		ioc.InitDB,
@@ -73,7 +74,7 @@ func InitWebServer() *App {
 		ioc.InitWebServer,
 		ioc.InitGinMiddlewares,
 
-		wire.Struct(new(App), "*"),
+		wire.Struct(new(app.App), "*"),
 	)
-	return new(App)
+	return new(app.App)
 }

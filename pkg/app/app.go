@@ -1,5 +1,5 @@
 // Copyright@daidai53 2024
-package main
+package app
 
 import (
 	"github.com/daidai53/webook/internal/events"

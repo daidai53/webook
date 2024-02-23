@@ -18,6 +18,7 @@ import (
 	"github.com/daidai53/webook/internal/web"
 	"github.com/daidai53/webook/internal/web/jwt"
 	"github.com/daidai53/webook/ioc"
+	"github.com/daidai53/webook/pkg/app"
 	"github.com/google/wire"
 )
 
@@ -27,7 +28,7 @@ import (
 
 // Injectors from wire.go:
 
-func InitWebServer() *App {
+func InitWebServer() *app.App {
 	cmdable := ioc.InitRedisClient()
 	handler := jwt.NewRedisJWTHandler(cmdable)
 	loggerV1 := ioc.InitLogger()
@@ -63,7 +64,7 @@ func InitWebServer() *App {
 	rlockClient := ioc.InitRlockClient(cmdable)
 	rankingJob := ioc.InitRankingJob(rankingService, loggerV1, rlockClient)
 	cron := ioc.InitJobs(loggerV1, rankingJob)
-	app := &App{
+	app := &app.App{
 		server:    engine,
 		consumers: v2,
 		cron:      cron,

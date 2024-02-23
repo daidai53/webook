@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/daidai53/webook/payment/domain"
+	"github.com/daidai53/webook/payment/events"
 	"github.com/daidai53/webook/payment/repository"
 	"github.com/daidai53/webook/pkg/logger"
 	"github.com/wechatpay-apiv3/wechatpay-go/core"
@@ -24,7 +25,8 @@ type NativePaymentService struct {
 
 	nativeCBTypeToStatus map[string]domain.PaymentStatus
 
-	l logger.LoggerV1
+	l        logger.LoggerV1
+	producer events.Producer
 }
 
 func NewNativePaymentService(svc *native.NativeApiService, appID string, mchID string, l logger.LoggerV1,
@@ -45,6 +47,10 @@ func NewNativePaymentService(svc *native.NativeApiService, appID string, mchID s
 			"REFUND":   domain.PaymentStatusRefund,
 		},
 	}
+}
+
+func (n *NativePaymentService) GetPayment(ctx context.Context, bizTradeId string) (domain.Payment, error) {
+	return n.repo.GetPayment(ctx, bizTradeId)
 }
 
 func (n *NativePaymentService) PrePay(ctx context.Context, pmt domain.Payment) (string, error) {
@@ -80,11 +86,25 @@ func (n *NativePaymentService) updateByTxn(ctx context.Context, trans *payments.
 	if !ok {
 		return fmt.Errorf("%w, 微信的状态是：%s", errUnknownTransactionState, trans.TradeState)
 	}
-	n.repo.UpdatePayment(ctx, domain.Payment{
+	err := n.repo.UpdatePayment(ctx, domain.Payment{
 		TxnID:      *trans.TransactionId,
 		BizTradeNo: *trans.OutTradeNo,
 		Status:     status,
 	})
+	if err != nil {
+		return err
+	}
+	// 通知业务方
+	// 发消息失败了怎么办？
+	err = n.producer.ProducePaymentEvent(ctx, events.PaymentEvent{
+		BizTradeNo: *trans.OutTradeNo,
+		Status:     status.Uint8(),
+	})
+	if err != nil {
+		n.l.Error("发送支付事件失败", logger.Error(err),
+			logger.String("biz_trade_no", *trans.OutTradeNo))
+	}
+	return err
 }
 
 func (n *NativePaymentService) SyncWechatInfo(ctx context.Context, tradeNo string) error {
