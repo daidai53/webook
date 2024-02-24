@@ -26,3 +26,9 @@ const (
 	PaymentStatusFailed
 	PaymentStatusRefund
 )
+
+type PaymentEvent struct {
+	Pid        int64
+	BizTradeNo string
+	Status     uint8
+}

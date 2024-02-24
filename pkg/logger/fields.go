@@ -32,3 +32,10 @@ func String(key string, val string) Field {
 		Val: val,
 	}
 }
+
+func Uint8(key string, val uint8) Field {
+	return Field{
+		Key: key,
+		Val: val,
+	}
+}

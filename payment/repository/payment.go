@@ -12,6 +12,19 @@ type paymentRepository struct {
 	dao dao.PaymentDAO
 }
 
+func (p *paymentRepository) FindUnsentPaymentEvents(ctx context.Context, offset, limit int) ([]domain.PaymentEvent, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *paymentRepository) StorePaymentEvent(ctx context.Context, bizTradeNo string, status uint8) (int64, error) {
+	return p.dao.StorePaymentEvent(ctx, bizTradeNo, status)
+}
+
+func (p *paymentRepository) SetPaymentEventSent(ctx context.Context, pid int64) error {
+	return p.dao.SetPaymentEventSent(ctx, pid)
+}
+
 func (p *paymentRepository) GetPayment(ctx context.Context, bizTradeId string) (domain.Payment, error) {
 	pmt, err := p.dao.GetPayment(ctx, bizTradeId)
 	return p.toDomain(&pmt), err

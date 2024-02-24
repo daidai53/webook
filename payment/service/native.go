@@ -94,6 +94,18 @@ func (n *NativePaymentService) updateByTxn(ctx context.Context, trans *payments.
 	if err != nil {
 		return err
 	}
+	pid, err := n.repo.StorePaymentEvent(ctx, *trans.OutTradeNo, status.Uint8())
+	if err != nil {
+		n.l.Error(
+			"存储PaymentEvent事件失败",
+			logger.Error(err),
+			logger.String("biz_trade_no", *trans.OutTradeNo),
+			logger.Uint8(
+				"status",
+				status.Uint8(),
+			),
+		)
+	}
 	// 通知业务方
 	// 发消息失败了怎么办？
 	err = n.producer.ProducePaymentEvent(ctx, events.PaymentEvent{
@@ -103,6 +115,14 @@ func (n *NativePaymentService) updateByTxn(ctx context.Context, trans *payments.
 	if err != nil {
 		n.l.Error("发送支付事件失败", logger.Error(err),
 			logger.String("biz_trade_no", *trans.OutTradeNo))
+	}
+	err = n.repo.SetPaymentEventSent(ctx, pid)
+	if err != nil {
+		n.l.Error(
+			"更新PaymentEvent为已发送状态失败",
+			logger.Error(err),
+			logger.Int64("pid", pid),
+		)
 	}
 	return err
 }
