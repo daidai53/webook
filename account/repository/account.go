@@ -4,12 +4,18 @@ package repository
 import (
 	"context"
 	"github.com/daidai53/webook/account/domain"
+	"github.com/daidai53/webook/account/repository/cache"
 	"github.com/daidai53/webook/account/repository/dao"
 	"github.com/ecodeclub/ekit/slice"
 )
 
 type accountRepository struct {
-	dao dao.AccountDAO
+	dao   dao.AccountDAO
+	cache cache.AccountCache
+}
+
+func (a *accountRepository) AddReward(ctx context.Context, credit domain.Credit) error {
+	return a.cache.AddReward(ctx, credit.Biz, credit.BizId)
 }
 
 func (a *accountRepository) AddActivities(ctx context.Context, credit domain.Credit) error {

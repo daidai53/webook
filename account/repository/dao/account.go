@@ -3,6 +3,7 @@ package dao
 
 import (
 	"context"
+	"errors"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"time"
@@ -13,6 +14,12 @@ type GORMAccountDAO struct {
 }
 
 func (g *GORMAccountDAO) AddActivities(ctx context.Context, activities ...AccountActivity) error {
+	var act AccountActivity
+	err := g.db.WithContext(ctx).Where("biz=? AND biz_id=?", activities[0].Biz, activities[0].BizId).
+		First(&act).Error
+	if err == nil {
+		return errors.New("AccountActivity已存在，重复记账")
+	}
 	now := time.Now().UnixMilli()
 	return g.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, act := range activities {

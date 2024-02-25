@@ -8,4 +8,5 @@ import (
 
 type AccountRepository interface {
 	AddActivities(ctx context.Context, credit domain.Credit) error
+	AddReward(ctx context.Context, credit domain.Credit) error
 }
