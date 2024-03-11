@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+import "search/v1/sync.proto";
+
+package search.v1;
+option go_package = "github.com/daidai53/webook/search/v1;searchv1";
+
+service SearchService{
+  rpc Search(SearchRequest) returns (SearchResponse);
+}
+
+message SearchRequest{
+  string expression = 1;
+  int64 uid = 2;
+}
+
+message SearchResponse{
+  UserResult user = 1;
+  ArticleResult article = 2;
+}
+
+message UserResult{
+  repeated User users = 1;
+}
+
+message ArticleResult{
+  repeated Article articles = 1;
+}

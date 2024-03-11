@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package search.v1;
+option go_package = "github.com/daidai53/webook/search/v1;searchv1";
+
+service SyncService{
+  rpc InputUser(InputUserRequest) returns (InputUserResponse);
+  rpc InputArticle(InputArticleRequest) returns (InputArticleResponse);
+  rpc InputAny(InputAnyRequest) returns (InputAnyResponse);
+}
+
+message InputUserRequest{
+  User user = 1;
+}
+
+message InputUserResponse{}
+
+message InputArticleRequest{
+  Article article = 1;
+}
+
+message InputArticleResponse{}
+
+message InputAnyRequest{
+  string index_name = 1;
+  string doc_id = 2;
+  string data = 3;
+}
+
+message InputAnyResponse{}
+
+message User {
+  int64 id = 1;
+  string nickname = 2;
+  string email = 3;
+  string phone = 4;
+}
+
+message Article{
+  int64 id = 1;
+  string title = 2;
+  string content = 3;
+  int32 status = 4;
+}
