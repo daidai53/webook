@@ -25,7 +25,7 @@ func (s *SaramaSyncProducer) ProduceSyncEvent(ctx context.Context, tags BizTags)
 	}
 	data, _ = json.Marshal(evt)
 	_, _, err := s.client.SendMessage(&sarama.ProducerMessage{
-		Topic: "search_sync_data",
+		Topic: "sync_any_events",
 		Value: sarama.ByteEncoder(data),
 	})
 	return err

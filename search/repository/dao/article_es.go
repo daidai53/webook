@@ -21,17 +21,25 @@ func (a *ArticleElasticDAO) InputArticle(ctx context.Context, arti Article) erro
 	return err
 }
 
-func (a *ArticleElasticDAO) Search(ctx context.Context, tagArgIds []int64, keywords []string) ([]Article, error) {
+func (a *ArticleElasticDAO) Search(ctx context.Context, tagArgIds []int64, colIds []int64, likeIds []int64, keywords []string) ([]Article, error) {
 	queryString := strings.Join(keywords, " ")
-	ids := slice.Map(tagArgIds, func(idx int, src int64) any {
+	tagIds := slice.Map(tagArgIds, func(idx int, src int64) any {
+		return src
+	})
+	colAnyIds := slice.Map(colIds, func(idx int, src int64) any {
+		return src
+	})
+	likeAnyIds := slice.Map(likeIds, func(idx int, src int64) any {
 		return src
 	})
 	status := elastic.NewTermQuery("status", 2)
-	tags := elastic.NewTermsQuery("id", ids...).Boost(2)
+	cols := elastic.NewTermsQuery("id", colAnyIds...).Boost(4)
+	likes := elastic.NewTermsQuery("id", likeAnyIds...).Boost(3)
+	tags := elastic.NewTermsQuery("id", tagIds...).Boost(2)
 	title := elastic.NewMatchQuery("title", queryString)
 	content := elastic.NewMatchQuery("content", queryString)
 
-	or := elastic.NewBoolQuery().Should(tags, title, content)
+	or := elastic.NewBoolQuery().Should(cols, likes, tags, title, content)
 	query := elastic.NewBoolQuery().Must(status, or)
 	resp, err := a.client.Search("article_idx").Query(query).Do(ctx)
 	if err != nil {

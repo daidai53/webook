@@ -9,8 +9,9 @@ import (
 )
 
 type articleRepository struct {
-	dao    dao.ArticleSearchDAO
-	tagDao dao.TagSearchDAO
+	dao      dao.ArticleSearchDAO
+	tagDao   dao.TagSearchDAO
+	interDao dao.InterEsDAO
 }
 
 func (a *articleRepository) SyncArticle(ctx context.Context, arti domain.Article) error {
@@ -22,7 +23,15 @@ func (a *articleRepository) SearchArticle(ctx context.Context, uid int64, keywor
 	if err != nil {
 		return nil, err
 	}
-	arts, err := a.dao.Search(ctx, tids, keywords)
+	colIds, err := a.interDao.SearchCollectBizIds(ctx, uid, "article")
+	if err != nil {
+		return nil, err
+	}
+	likeIds, err := a.interDao.SearchLikeBizIds(ctx, uid, "article")
+	if err != nil {
+		return nil, err
+	}
+	arts, err := a.dao.Search(ctx, tids, colIds, likeIds, keywords)
 	if err != nil {
 		return nil, err
 	}

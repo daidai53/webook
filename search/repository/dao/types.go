@@ -10,11 +10,16 @@ type UserSearchDAO interface {
 
 type ArticleSearchDAO interface {
 	InputArticle(ctx context.Context, arti Article) error
-	Search(ctx context.Context, tagArgIds []int64, keywords []string) ([]Article, error)
+	Search(ctx context.Context, tagArgIds []int64, colIds []int64, likeIds []int64, keywords []string) ([]Article, error)
 }
 
 type TagSearchDAO interface {
 	SearchBizIds(ctx context.Context, uid int64, biz string, keywords []string) ([]int64, error)
+}
+
+type InterSearchDAO interface {
+	SearchCollectBizIds(ctx context.Context, uid int64, biz string) ([]int64, error)
+	SearchLikeBizIds(ctx context.Context, uid int64, biz string) ([]int64, error)
 }
 
 type AnyDAO interface {

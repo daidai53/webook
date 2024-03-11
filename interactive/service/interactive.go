@@ -4,8 +4,11 @@ package service
 import (
 	"context"
 	"github.com/daidai53/webook/interactive/domain"
+	events2 "github.com/daidai53/webook/interactive/events"
 	"github.com/daidai53/webook/interactive/repository"
+	"github.com/daidai53/webook/pkg/logger"
 	"golang.org/x/sync/errgroup"
+	"time"
 )
 
 //go:generate mockgen -source=./interactive.go -package=svcmocks -destination=./mocks/interactive.mock.go
@@ -19,12 +22,15 @@ type InteractiveService interface {
 }
 
 type interactiveService struct {
-	repo repository.InteractiveRepository
+	repo     repository.InteractiveRepository
+	producer events2.Producer
+	l        logger.LoggerV1
 }
 
-func NewInteractiveService(repo repository.InteractiveRepository) InteractiveService {
+func NewInteractiveService(repo repository.InteractiveRepository, producer events2.Producer) InteractiveService {
 	return &interactiveService{
-		repo: repo,
+		repo:     repo,
+		producer: producer,
 	}
 }
 
@@ -60,11 +66,53 @@ func (i *interactiveService) Get(ctx context.Context, biz string, bizId int64, u
 }
 
 func (i *interactiveService) Collect(ctx context.Context, biz string, bizId int64, uid int64, cid int64) error {
-	return i.repo.AddCollectionItem(ctx, biz, bizId, uid, cid)
+	err := i.repo.AddCollectionItem(ctx, biz, bizId, uid, cid)
+	if err != nil {
+		return err
+	}
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		err := i.producer.ProduceInteractiveEvent(ctx, events2.InteractiveEvent{
+			Uid:   uid,
+			Biz:   biz,
+			BizId: bizId,
+			Type:  events2.TypeCollect,
+		})
+		if err != nil {
+			i.l.Error("发送收藏事件到Kafka失败",
+				logger.Error(err),
+				logger.Int64("uid", uid),
+				logger.String("biz", biz),
+				logger.Int64("biz_id", bizId))
+		}
+	}()
+	return nil
 }
 
 func (i *interactiveService) Like(ctx context.Context, biz string, id int64, uid int64) error {
-	return i.repo.IncrLike(ctx, biz, id, uid)
+	err := i.repo.IncrLike(ctx, biz, id, uid)
+	if err != nil {
+		return err
+	}
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		err := i.producer.ProduceInteractiveEvent(ctx, events2.InteractiveEvent{
+			Uid:   uid,
+			Biz:   biz,
+			BizId: id,
+			Type:  events2.TypeLike,
+		})
+		if err != nil {
+			i.l.Error("发送点赞事件到Kafka失败",
+				logger.Error(err),
+				logger.Int64("uid", uid),
+				logger.String("biz", biz),
+				logger.Int64("biz_id", id))
+		}
+	}()
+	return nil
 }
 
 func (i *interactiveService) CancelLike(ctx context.Context, biz string, id int64, uid int64) error {
