@@ -27,6 +27,10 @@ type CachedRelationRepository struct {
 	l     logger.LoggerV1
 }
 
+func (c *CachedRelationRepository) Cache() cache.FollowCache {
+	return c.cache
+}
+
 func (d *CachedRelationRepository) GetFollowStatics(ctx context.Context, uid int64) (domain.FollowStatics, error) {
 	// 快路径
 	res, err := d.cache.StaticsInfo(ctx, uid)
@@ -57,7 +61,7 @@ func (d *CachedRelationRepository) InactiveFollowRelation(ctx context.Context, f
 	if err != nil {
 		return err
 	}
-	return d.cache.CancelFollow(ctx, follower, followee)
+	return nil
 }
 
 func (d *CachedRelationRepository) GetFollowee(ctx context.Context, follower, offset, limit int64) ([]domain.FollowRelation, error) {
@@ -89,7 +93,7 @@ func (d *CachedRelationRepository) AddFollowRelation(ctx context.Context, c doma
 	if err != nil {
 		return err
 	}
-	return d.cache.Follow(ctx, c.Follower, c.Followee)
+	return nil
 }
 
 func (d *CachedRelationRepository) toDomain(fr dao.FollowRelation) domain.FollowRelation {

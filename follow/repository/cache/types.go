@@ -6,13 +6,6 @@ import (
 	"github.com/daidai53/webook/follow/domain"
 )
 
-package cache
-
-import (
-"context"
-"gitee.com/geekbang/basic-go/webook/follow/domain"
-)
-
 type FollowCache interface {
 	StaticsInfo(ctx context.Context, uid int64) (domain.FollowStatics, error)
 	SetStaticsInfo(ctx context.Context, uid int64, statics domain.FollowStatics) error
