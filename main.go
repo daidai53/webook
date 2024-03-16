@@ -23,12 +23,12 @@ func main() {
 		tpCancel(tpCtx)
 	}()
 	app := InitWebServer()
-	app.cron.Start()
+	app.Cron.Start()
 	defer func() {
-		<-app.cron.Stop().Done()
+		<-app.Cron.Stop().Done()
 	}()
-	server := app.server
-	for _, c := range app.consumers {
+	server := app.Server
+	for _, c := range app.Consumers {
 		err := c.Start()
 		if err != nil {
 			panic(err)

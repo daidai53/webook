@@ -3,7 +3,10 @@ services:
   mysql:
     image: mysql:8.0
     restart: always
-    command: --default-authentication-plugin=mysql_native_password
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --binlog-format=ROW
+      - --server-id=1
     environment:
       MYSQL_ROOT_PASSWORD: root
     volumes:
@@ -43,6 +46,10 @@ services:
       - '9094:9094'
     environment:
       - KAFKA_CFG_NODE_ID=0
+        #      - 三个分区
+      - KAFKA_CREATE_TOPICS=webook_binlog:3:1
+        #      - 允许自动创建 topic，线上不要开启
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
       - KAFKA_CFG_LISTENERS=PLAINTEXT://0.0.0.0:9092,CONTROLLER://:9093,EXTERNAL://0.0.0.0:9094
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
@@ -81,7 +88,7 @@ services:
       ZOO_SERVERS: server.1=zoo:2888:3888;2181
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.4
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -89,3 +96,37 @@ services:
       - "ES_JAVA_OPTS=-Xms84m -Xmx512m"
     ports:
       - "9200:9200"
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.12.2
+    volumes:
+      - ./config/logstash/logstash.config:/usr/share/logstash/pipeline/logstash.config
+      #- ./logstash-logs:/usr/share/logstash/logs
+    environment:
+      - "xpack:monitoring.elasticsearch.hosts=http://elasticsearch:9200"
+    ports:
+      - "5044:5044"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.2
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - i18n.locale=zh-CN
+    ports:
+      - "5601:5601"
+
+  canal:
+    image: canal/canal-server
+    environment:
+      - CANAL_IP=canal-server
+      - CANAL_PORT=11111
+      - CANAL_DESTINATIONS=example
+    depends_on:
+      - mysql
+      - kafka
+    ports:
+      - "11111:11111"
+      - "11110:11110"
+    volumes:
+      - ./script/canal/webook/instance.properties:/home/admin/canal-server/conf/webook/instance.properties
+      - ./script/canal/canal.properties:/home/admin/canal-server/conf/canal.properties

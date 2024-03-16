@@ -65,9 +65,9 @@ func InitWebServer() *app.App {
 	rankingJob := ioc.InitRankingJob(rankingService, loggerV1, rlockClient)
 	cron := ioc.InitJobs(loggerV1, rankingJob)
 	app := &app.App{
-		server:    engine,
-		consumers: v2,
-		cron:      cron,
+		Server:    engine,
+		Consumers: v2,
+		Cron:      cron,
 	}
 	return app
 }

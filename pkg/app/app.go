@@ -8,7 +8,7 @@ import (
 )
 
 type App struct {
-	server    *gin.Engine
-	consumers []events.Consumer
-	cron      *cron.Cron
+	Server    *gin.Engine
+	Consumers []events.Consumer
+	Cron      *cron.Cron
 }
