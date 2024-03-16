@@ -8,46 +8,64 @@ import (
 	"time"
 )
 
-type gormFollowDAO struct {
+type GORMFollowRelationDAO struct {
 	db *gorm.DB
 }
 
-func (g *gormFollowDAO) FollowRelationList(ctx context.Context, follower, offset, limit int64) ([]FollowRelation, error) {
-	//TODO implement me
-	panic("implement me")
+func (g *GORMFollowRelationDAO) CntFollower(ctx context.Context, uid int64) (int64, error) {
+	var res int64
+	err := g.db.WithContext(ctx).
+		Select("count(follower)").
+		Where("followee = ? AND status = ?",
+			uid, FollowRelationStatusActive).Count(&res).Error
+	return res, err
 }
 
-func (g *gormFollowDAO) FollowRelationDetail(ctx context.Context, follower int64, followee int64) (FollowRelation, error) {
-	//TODO implement me
-	panic("implement me")
+func (g *GORMFollowRelationDAO) CntFollowee(ctx context.Context, uid int64) (int64, error) {
+	var res int64
+	err := g.db.WithContext(ctx).
+		Select("count(followee)").
+		Where("follower = ? AND status = ?",
+			uid, FollowRelationStatusActive).Count(&res).Error
+	return res, err
 }
 
-func (g *gormFollowDAO) CreateFollowRelation(ctx context.Context, c FollowRelation) error {
+func (g *GORMFollowRelationDAO) UpdateStatus(ctx context.Context, followee int64, follower int64, status uint8) error {
 	now := time.Now().UnixMilli()
-	c.CTime = now
-	c.UTime = now
-	c.Status = FollowRelationStatusActive
-	return g.db.WithContext(ctx).Clauses(clause.OnConflict{
-		DoUpdates: clause.Assignments(map[string]interface{}{
-			"status": FollowRelationStatusActive,
-		}),
-	}).Create(&c).Error
-}
-
-func (g *gormFollowDAO) UpdateStatus(ctx context.Context, followee int64, follower int64, status uint8) error {
-	return g.db.WithContext(ctx).Where("follower=? AND followee=?", follower, followee).
+	return g.db.WithContext(ctx).
+		Where("follower = ? AND followee = ?", follower, followee).
 		Updates(map[string]any{
 			"status": status,
-			"u_time": time.Now().UnixMilli(),
+			"utime":  now,
 		}).Error
 }
 
-func (g *gormFollowDAO) CntFollower(ctx context.Context, uid int64) (int64, error) {
-	//TODO implement me
-	panic("implement me")
+func (g *GORMFollowRelationDAO) FollowRelationList(ctx context.Context,
+	follower, offset, limit int64) ([]FollowRelation, error) {
+	var res []FollowRelation
+	err := g.db.WithContext(ctx).
+		Where("follower = ? AND status = ?", follower, FollowRelationStatusActive).
+		Offset(int(offset)).Limit(int(limit)).
+		Find(&res).Error
+	return res, err
 }
 
-func (g *gormFollowDAO) CntFollowee(ctx context.Context, uid int64) (int64, error) {
-	//TODO implement me
-	panic("implement me")
+func (g *GORMFollowRelationDAO) FollowRelationDetail(ctx context.Context, follower int64, followee int64) (FollowRelation, error) {
+	var res FollowRelation
+	err := g.db.WithContext(ctx).Where("follower = ? AND followee = ? AND status = ?",
+		follower, followee, FollowRelationStatusActive).First(&res).Error
+	return res, err
+}
+
+func (g *GORMFollowRelationDAO) CreateFollowRelation(ctx context.Context, f FollowRelation) error {
+	now := time.Now().UnixMilli()
+	f.CTime = now
+	f.UTime = now
+	f.Status = FollowRelationStatusActive
+	return g.db.WithContext(ctx).Clauses(clause.OnConflict{
+		DoUpdates: clause.Assignments(map[string]any{
+			"utime":  now,
+			"status": FollowRelationStatusActive,
+		}),
+	}).Create(&f).Error
 }
