@@ -11,5 +11,6 @@ type User struct {
 	AboutMe  string
 	Phone    string
 
+	Active     bool
 	WeChatInfo WeChatInfo
 }

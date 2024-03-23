@@ -24,6 +24,7 @@ type UserService interface {
 	Edit(c *gin.Context, idInt64 int64, nickname, birthday, aboutMe string) error
 	FindOrCreate(c *gin.Context, phone string) (domain.User, error)
 	FindOrCreateByWeChat(c context.Context, info domain.WeChatInfo) (domain.User, error)
+	IsActiveUser(ctx context.Context, uid int64) (bool, error)
 }
 
 type userService struct {
@@ -34,6 +35,10 @@ func NewUserService(r repository.UserRepository) UserService {
 	return &userService{
 		repo: r,
 	}
+}
+
+func (u *userService) IsActiveUser(ctx context.Context, uid int64) (bool, error) {
+	return true, nil
 }
 
 func (u *userService) SignUp(ctx context.Context, user domain.User) error {

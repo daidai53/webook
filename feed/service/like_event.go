@@ -5,13 +5,15 @@ import (
 	"context"
 	"github.com/daidai53/webook/feed/domain"
 	"github.com/daidai53/webook/feed/repository"
+	"github.com/daidai53/webook/internal/service"
 	"time"
 )
 
 const likeEventName = "like_event"
 
 type LikeEventHandler struct {
-	repo repository.FeedEventRepo
+	repo        repository.FeedEventRepo
+	userService service.UserService
 }
 
 func (l *LikeEventHandler) CreateFeedEvent(ctx context.Context, ext domain.ExtendFields) error {
@@ -20,6 +22,16 @@ func (l *LikeEventHandler) CreateFeedEvent(ctx context.Context, ext domain.Exten
 	uid, err := ext.Get("liked").Int64()
 	if err != nil {
 		return err
+	}
+
+	if act, err := l.userService.IsActiveUser(ctx, uid); err == nil && act {
+		return l.repo.CreatePullEvent(ctx,
+			domain.FeedEvent{
+				Uid:   uid,
+				Ext:   ext,
+				Type:  likeEventName,
+				Ctime: time.Now(),
+			})
 	}
 	return l.repo.CreatePushEvents(
 		ctx,
@@ -35,5 +47,8 @@ func (l *LikeEventHandler) CreateFeedEvent(ctx context.Context, ext domain.Exten
 }
 
 func (l *LikeEventHandler) FindFeedEvents(ctx context.Context, uid, timestamp, limit int64) ([]domain.FeedEvent, error) {
+	if act, err := l.userService.IsActiveUser(ctx, uid); err == nil && act {
+		return l.repo.FindPullEventsWithTyp(ctx, likeEventName, []int64{uid}, timestamp, limit)
+	}
 	return l.repo.FindPushEventsWithTyp(ctx, likeEventName, uid, timestamp, limit)
 }
